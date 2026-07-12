@@ -1,0 +1,36 @@
+library/db.sqlite
+library/db.sqlite-*
+library/originals/*
+library/thumbs/*
+library/previews/*
+!library/originals/.gitkeep
+!library/thumbs/.gitkeep
+!library/previews/.gitkeep
+.env
+backups/
+# 2026-07-12 主人拍: 排除附件 / 临时文件
+.attachments/
+BODR_Image_Prompt.db
+library/*.preauth-backup
+library/*.backup
+.local-work/
+node_modules/
+.vite/
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+dist/
+frontend/dist/
+dist-release/
+.pages-artifact/
+.page-build/
+*.egg-info/
+*.pyc
+.DS_Store
+
+# Runtime data and logs (not source)
+.logs/
+library/ipl.sqlite
+library/ipl.sqlite-*
+*egg-info/

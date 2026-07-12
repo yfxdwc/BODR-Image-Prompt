@@ -1,0 +1,20 @@
+[Unit]
+Description=IPL BODR Image Prompt backend (uvicorn on 3091)
+After=network.target
+
+[Service]
+Type=simple
+User=new6
+Group=new6
+WorkingDirectory=/home/new6/BODR-Image-Prompt
+Environment=BACKEND_PORT=3091
+Environment=BACKEND_HOST=0.0.0.0
+Environment=IMAGE_PROMPT_LIBRARY_PATH=/home/new6/BODR-Image-Prompt/library
+ExecStart=/home/new6/BODR-Image-Prompt/.venv/bin/python3 -m uvicorn backend.main:app --host 0.0.0.0 --port 3091 --workers 1
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/ipl.log
+StandardError=append:/var/log/ipl.log
+
+[Install]
+WantedBy=multi-user.target
