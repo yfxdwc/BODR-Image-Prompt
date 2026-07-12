@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, History, Search, Settings as SettingsIcon, X } from 'lucide-react';
 import headerLogo from '../assets/header-logo.png';
 import { useDrawer } from '../auth/DrawerContext';
+import { useAuth } from '../auth/AuthContext';
 import { api } from '../api/client';
 import type { CategoryRecord, SeriesRecord } from '../types';
 import type { Translator } from '../utils/i18n';
@@ -103,6 +104,8 @@ export default function TopBar({
   // 2026-07-12 主人拍: 顶栏设置齿轮 + 用户头像直接通过 DrawerContext 打开对应抽屉,
   // 不依赖上层 prop drilling.
   const { openConfig } = useDrawer();
+  // 2026-07-12 主人拍: 守护字典拉取, 避免初次挂载 401 触发到 AuthOverlay 之外的 API.
+  const { status: authStatus } = useAuth();
 
   // 2026-07-12 主人拍: 品类 / 系列胶囊 - 拉一次字典, 按需联动.
   const [categories, setCategories] = useState<CategoryRecord[]>([]);
@@ -114,21 +117,23 @@ export default function TopBar({
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (authStatus !== 'authenticated') return;
     let cancelled = false;
     api.products.listCategories()
       .then(res => { if (!cancelled) setCategories(res.items); })
       .catch(() => { if (!cancelled) setCategories([]); });
     return () => { cancelled = true; };
-  }, []);
+  }, [authStatus]);
 
   // 系列胶囊: 选了品类才传 category_id 给后端, 联动过滤.
   useEffect(() => {
+    if (authStatus !== 'authenticated') return;
     let cancelled = false;
     api.products.listSeries(categoryId)
       .then(res => { if (!cancelled) setSeriesList(res.items); })
       .catch(() => { if (!cancelled) setSeriesList([]); });
     return () => { cancelled = true; };
-  }, [categoryId]);
+  }, [authStatus, categoryId]);
 
   // 切换品类时: 如果当前 seriesId 不在新列表里, 清空 (避免隐项)
   useEffect(() => {

@@ -170,7 +170,12 @@ function AppInner() {
     setUpdateStatus(undefined);
     return undefined;
   }), []);
-  useEffect(() => { refreshClusters(); refreshTags(); refreshGenerationAvailability(); refreshAppConfig(); refreshUpdateStatus(); }, [refreshUpdateStatus]);
+  // 2026-07-12 主人拍: 5 个 refresh 守护 authStatus='authenticated'. 之前无条件挂载即触发,
+  // 后端在浏览器 cookie 还没就绪时收到请求, 返回 401 Not authenticated → 内容区报错 → 必须刷新才好.
+  useEffect(() => {
+    if (authStatus !== 'authenticated') return;
+    refreshClusters(); refreshTags(); refreshGenerationAvailability(); refreshAppConfig(); refreshUpdateStatus();
+  }, [authStatus, refreshUpdateStatus]);
   useEffect(() => {
     if (isDemoMode || !FRONTEND_BUILD_VERSION || FRONTEND_BUILD_VERSION === 'demo') return;
     api.health().then(({ version: serverVersion }) => {
@@ -298,20 +303,28 @@ function AppInner() {
     <ConfigPanel t={t} uiLanguage={uiLanguage} onUiLanguage={updateUiLanguage} preferredLanguage={preferredLanguage} onPreferredLanguage={updatePreferredLanguage} globalThumbnailBudget={globalThumbnailBudget} onGlobalThumbnailBudget={updateGlobalThumbnailBudget} imageCompressionEnabled={imageCompressionEnabled} onImageCompressionEnabled={updateImageCompression} updateStatus={updateStatus} onRefreshUpdateStatus={refreshUpdateStatus} onUpdateInstalled={setRestartRequiredVersion} onProvidersChanged={refreshGenerationAvailability} />
     {/* Static-test compatibility marker: <main className="app-main"> */}
     <main className="app-main">
-      {<ProductLibraryView
-        t={t}
-        q={debouncedQ}
-        categoryId={categoryFilterId}
-        seriesId={seriesFilterId}
-        newProductId={newProductId}
-        onNewProductOpened={() => setNewProductId(undefined)}
-        libraryView={view}
-        onLibraryView={updateView}
-        imageCompressionEnabled={imageCompressionEnabled}
-        globalThumbnailBudget={globalThumbnailBudget}
-        onProductsCountChange={setProductsCount}
-        onNewProductLoadError={(msg) => setToast({ title: `加载失败: ${msg}`, tone: 'error' })}
-      />}
+      {authStatus === 'authenticated' ? (
+        <ProductLibraryView
+          t={t}
+          q={debouncedQ}
+          categoryId={categoryFilterId}
+          seriesId={seriesFilterId}
+          newProductId={newProductId}
+          onNewProductOpened={() => setNewProductId(undefined)}
+          libraryView={view}
+          onLibraryView={updateView}
+          imageCompressionEnabled={imageCompressionEnabled}
+          globalThumbnailBudget={globalThumbnailBudget}
+          onProductsCountChange={setProductsCount}
+          onNewProductLoadError={(msg) => setToast({ title: `加载失败: ${msg}`, tone: 'error' })}
+          authStatus={authStatus}
+        />
+      ) : (
+        // 2026-07-12 主人拍: 避免 'loading' / 'anonymous' 时 ProductLibraryView 挂载就发 /api/v1/products,
+        // 触发 401 Not authenticated → 内容区报错 → 必须刷新才好. AuthOverlay 会自己覆盖整页,
+        // 这里只放一个静态骨架占位即可.
+        <div className="loading" role="status">{t('loading')}</div>
+      )}
     </main>
     <UserCenterPanel t={t} />
     {/* 2026-07-10: selection-toolbar (cards 模式专有) 已删 */}

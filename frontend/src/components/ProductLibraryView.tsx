@@ -1396,6 +1396,7 @@ export default function ProductLibraryView({
   globalThumbnailBudget,
   onProductsCountChange,            // 2026-07-12 主人拍: products 数量推回 TopBar
   onNewProductLoadError,            // 2026-07-12 主人拍: 加载新产品失败时通知顶层弹 toast
+  authStatus,                        // 2026-07-12 主人拍: 守护 list 请求, 避免 401 闪烁
 }: {
   t: Translator;
   q?: string;
@@ -1409,6 +1410,8 @@ export default function ProductLibraryView({
   globalThumbnailBudget: number;
   onProductsCountChange?: (count: number) => void;
   onNewProductLoadError?: (message: string) => void;
+  // 2026-07-12 主人拍: 'loading' | 'anonymous' | 'authenticated'. 用于守护 list 请求, 避免 401 闪烁.
+  authStatus?: 'loading' | 'anonymous' | 'authenticated';
 }) {
   // 2026-07-11 主人拍: 把 config 里的 globalThumbnailBudget 接到瀑布流 (timeline masonry 张数 / grid 卡片数).
   // 列表用 ProductDetail (含 images 字段, 也兼容 4caf16a 的 spec/selling_points 字段)
@@ -1423,7 +1426,10 @@ export default function ProductLibraryView({
   // 2026-07-10: onLibraryView 是导航栏接的 setter, 预留接口. 当前组件内部不调用 (页面内不再有切换按钮).
   void onLibraryView;
 
+  // 2026-07-12 主人拍: 仅在 authenticated 时拉产品. App.tsx 已守护条件渲染,
+  // 这里再守一次, 防止 StrictMode / 上层误传导致初次挂载就触发 401.
   useEffect(() => {
+    if (authStatus !== 'authenticated') return;
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -1448,7 +1454,7 @@ export default function ProductLibraryView({
     return () => {
       cancelled = true;
     };
-  }, [q, categoryId, seriesId]);
+  }, [authStatus, q, categoryId, seriesId]);
 
   // 2026-07-05 09:20 主人拍 A 方案: newProductId 设后, 主动 fetch 该产品 → 打开 ProductModal
   // 2026-07-05 09:27 修正: 不在此时通知 onNewProductOpened, 推迟到 modal 关闭时 (避免 defaultInfoEditing 翻转)
