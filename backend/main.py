@@ -59,10 +59,9 @@ def create_app(library_path: Path | str | None = None, frontend_dist_path: Path 
     app.state.library_path = library
     app.state.frontend_dist_path = frontend_dist
     # 2026-07-11: 加上 https://web3091.tooyang.top (cloudflare tunnel) 到 CORS 白名单, 否则 cookie 跨域丢
-    # 2026-07-12: 新增 https://bip.tooyang.top (主域名迁移), 旧 web3091 保留过渡.
+    # 2026-07-12: web3091 已退役, 仅保留主域名 https://bip.tooyang.top.
     _cors_origins = [
         "http://127.0.0.1:5177", "http://localhost:5177",
-        "https://web3091.tooyang.top",
         "https://bip.tooyang.top",
     ]
     app.add_middleware(
