@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, History, Search, Settings as SettingsIcon, X } from 'lucide-react';
+import { ChevronDown, Search, Settings as SettingsIcon, X } from 'lucide-react';
 import headerLogo from '../assets/header-logo.png';
 import { useDrawer } from '../auth/DrawerContext';
 import { useAuth } from '../auth/AuthContext';
@@ -9,31 +9,6 @@ import type { Translator } from '../utils/i18n';
 import UserMenu from './UserMenu';
 
 type LibraryView = 'grid' | 'timeline';
-
-const SEARCH_HISTORY_KEY = 'BODR-Image-Prompt.search_history.v1';
-const SEARCH_HISTORY_MAX = 10;
-
-function loadSearchHistory(): string[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = window.localStorage.getItem(SEARCH_HISTORY_KEY);
-    if (!raw) return [];
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr.filter(x => typeof x === 'string').slice(0, SEARCH_HISTORY_MAX) : [];
-  } catch {
-    return [];
-  }
-}
-function pushSearchHistory(entry: string) {
-  if (typeof window === 'undefined') return;
-  const clean = entry.trim();
-  if (!clean) return;
-  // 2026-07-12 主人拍: 归一化 (case-insensitive) 去重. "xiangyun" 和 "XIANGYUN" 不并存.
-  const key = clean.toLowerCase();
-  const current = loadSearchHistory().filter(x => x.toLowerCase() !== key);
-  const next = [clean, ...current].slice(0, SEARCH_HISTORY_MAX);
-  window.localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(next));
-}
 
 // 2026-07-10 主人拍: 导航栏从「产品库/Cards」改为产品库内部「网格/时间线」. 删 ViewToggle, 新增 LibraryViewToggle.
 function LibraryViewToggle({ libraryView, onLibraryView, t }: { libraryView: LibraryView; onLibraryView: (v: LibraryView) => void; t: Translator }) {
@@ -112,7 +87,6 @@ export default function TopBar({
   const [seriesList, setSeriesList] = useState<SeriesRecord[]>([]);
   const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
   const [seriesMenuOpen, setSeriesMenuOpen] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
   // 2026-07-12 主人拍: 用 ref + useEffect 替代 autoFocus (React 19 不推荐 autoFocus).
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -155,11 +129,6 @@ export default function TopBar({
     [seriesList, seriesId]
   );
 
-  const history = useMemo(() => loadSearchHistory(), [historyOpen, q]);
-
-  const commitSearch = () => {
-    if (q.trim()) pushSearchHistory(q.trim());
-  };
   return (
     <header className="chrome">
       <nav className="nav-row" aria-label={t('primaryNavigation')}>
@@ -239,9 +208,7 @@ export default function TopBar({
             ref={searchInputRef}
             value={q}
             onChange={e => onQ(e.target.value)}
-            onFocus={() => setHistoryOpen(true)}
-            onBlur={() => window.setTimeout(() => setHistoryOpen(false), 150)}
-            onKeyDown={e => { if (e.key === 'Enter') commitSearch(); if (e.key === 'Escape') { onQ(''); onCategoryId(undefined); onSeriesId(undefined); (e.currentTarget as HTMLInputElement).blur(); } }}
+            onKeyDown={e => { if (e.key === 'Escape') { onQ(''); onCategoryId(undefined); onSeriesId(undefined); (e.currentTarget as HTMLInputElement).blur(); } }}
             placeholder={t('searchPlaceholder')}
             aria-label={t('searchAria')}
           />
@@ -256,26 +223,6 @@ export default function TopBar({
             >
               <X size={16} />
             </button>
-          )}
-          {historyOpen && history.length > 0 && (
-            <div className="search-history-popup" role="listbox" aria-label={t('searchHistory') || '搜索历史'}>
-              <div className="search-history-head">
-                <History size={14} />
-                <span>{t('searchHistory') || '搜索历史'}</span>
-              </div>
-              {history.map(entry => (
-                <button
-                  type="button"
-                  key={entry}
-                  className="search-history-item"
-                  onMouseDown={e => e.preventDefault()}
-                  onClick={() => { onQ(entry); setHistoryOpen(false); }}
-                >
-                  <Search size={13} />
-                  <span>{entry}</span>
-                </button>
-              ))}
-            </div>
           )}
         </div>
 
