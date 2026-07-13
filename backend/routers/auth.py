@@ -56,7 +56,8 @@ def _set_auth_cookies(response: Response, tokens: dict) -> None:
         expires=tokens["access_expires_at"],
         **common,
     )
-    # refresh: 30d
+    # 2026-07-14 主人拍: refresh cookie 30d 持久. max_age + expires 都设, 浏览器重启仍保留.
+    # access cookie 仍 1h 短期; 前端会在它快过期/失效时调 /auth/refresh 续期.
     response.set_cookie(
         COOKIE_REFRESH, tokens["refresh_token"],
         max_age=60 * 60 * 24 * 30,
@@ -114,8 +115,15 @@ def refresh(
     ip: str = Depends(client_ip),
     ua: Optional[str] = Depends(client_user_agent),
 ):
+    """2026-07-14 主人拍: 长期登录.
+
+    优先用 body 里的 refresh_token; 没有则从 cookie 拿, 实现"重启浏览器/电脑仍保持登录".
+    """
     svc = _service(request)
-    tokens = svc.refresh(refresh_token=payload.refresh_token, ip=ip, user_agent=ua)
+    raw = (payload.refresh_token or "").strip() or request.cookies.get(COOKIE_REFRESH, "")
+    if not raw:
+        raise HTTPException(401, "Missing refresh token")
+    tokens = svc.refresh(refresh_token=raw, ip=ip, user_agent=ua)
     _set_auth_cookies(response, tokens)
     return tokens
 

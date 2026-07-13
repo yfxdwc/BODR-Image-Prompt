@@ -43,11 +43,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // 首次挂载探测 (StrictMode 安全)
+  // 2026-07-14 主人拍: 长期登录. 先用 refresh cookie 静默续签, 再探测 /me.
+  // 这样电脑重启/浏览器重启也能直接保持登录, 不会先出 401 再显示内容.
   useEffect(() => {
     if (initRan.current) return;
     initRan.current = true;
-    void refresh();
+    void (async () => {
+      // 先用 refresh cookie 静默续签 (可能没登录, 失败也无所谓)
+      try { await authApi.refresh(); } catch { /* 未登录或 refresh 失败, 继续 /me 探测 */ }
+      await refresh();
+    })();
   }, [refresh]);
+
+  // 2026-07-14 主人拍: 切回标签页时静默续签一次, 避免 access 过期后第一次请求 401.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        void (async () => {
+          try { await authApi.refresh(); } catch { /* ignore */ }
+        })();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
 
   const login = useCallback(async (payload: LoginPayload) => {
     // 2026-07-12 主人拍: 登录后直接用 login 响应里的 user, 不再调 refresh().

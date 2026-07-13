@@ -484,7 +484,7 @@ class TokenPair(BaseModel):
 
 
 class RefreshIn(BaseModel):
-    refresh_token: str
+    refresh_token: Optional[str] = None
 
 
 class UserPublic(BaseModel):

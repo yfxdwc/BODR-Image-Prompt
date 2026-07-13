@@ -4,7 +4,30 @@ import type { AuthUser, TokenPair, LoginPayload, RegisterPayload } from './types
 
 const API = '/api';
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+let inflightRefresh: Promise<boolean> | null = null;
+
+async function tryRefresh(): Promise<boolean> {
+  if (inflightRefresh) return inflightRefresh;
+  inflightRefresh = (async () => {
+    try {
+      const r = await fetch(API + '/auth/refresh', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      return r.ok;
+    } catch {
+      return false;
+    } finally {
+      // 释放, 下次 401 仍能重试
+      setTimeout(() => { inflightRefresh = null; }, 0);
+    }
+  })();
+  return inflightRefresh;
+}
+
+async function request<T>(path: string, init?: RequestInit, _retried = false): Promise<T> {
   const r = await fetch(API + path, {
     ...init,
     credentials: 'include',  // 跨 cloudflare tunnel 也能带上 cookie
@@ -13,6 +36,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       ...(init?.headers as Record<string, string> | undefined),
     },
   });
+  // 2026-07-14 主人拍: 长期登录. access 1h 过期时静默 refresh 一次再重放请求.
+  if (r.status === 401 && !_retried && path !== '/auth/login' && path !== '/auth/refresh' && path !== '/auth/register') {
+    const ok = await tryRefresh();
+    if (ok) return request<T>(path, init, true);
+  }
   if (!r.ok) {
     let msg = `HTTP ${r.status}`;
     try {
@@ -32,6 +60,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const authApi = {
   me: () => request<AuthUser | null>('/auth/me'),
+
+  // 2026-07-14 主人拍: 长期登录. access 过期前用 refresh cookie 静默续签.
+  refresh: () => request<TokenPair>('/auth/refresh', { method: 'POST', body: '{}' }),
 
   login: (payload: LoginPayload) =>
     request<TokenPair>('/auth/login', { method: 'POST', body: JSON.stringify(payload) }),
