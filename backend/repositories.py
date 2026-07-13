@@ -691,9 +691,12 @@ class ProductRepository:
             like = f"%{q}%"
             if tokens:
                 match = " ".join(t + "*" for t in tokens)
-                # FTS5 优先 + LIKE 兜底
+                # FTS5 优先 + LIKE 兜底.
+                # 2026-07-13 主人拍 bug fix: 之前 'SELECT rowid' 是 FTS5 内部 rowid, 跟 products.id 不同.
+                # FTS5 rowid 是 SQLite B-tree 自增 (复用被删的 rowid 槽), product_id 才是真外键.
+                # 错把 rowid 当 product_id 会让搜索结果混入无关产品 (例: 搜 '旭日' 出现 志邦8802).
                 where.append(
-                    "p.id IN (SELECT rowid FROM product_search WHERE product_search MATCH ? "
+                    "p.id IN (SELECT product_id FROM product_search WHERE product_search MATCH ? "
                     "UNION SELECT p2.id FROM products p2 WHERE "
                     "(p2.name LIKE ? OR p2.series LIKE ? OR p2.category LIKE ? "
                     "OR p2.spec LIKE ? OR p2.selling_points LIKE ? "
