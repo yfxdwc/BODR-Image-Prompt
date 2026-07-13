@@ -318,6 +318,7 @@ function AppInner() {
           onProductsCountChange={setProductsCount}
           onNewProductLoadError={(msg) => setToast({ title: `加载失败: ${msg}`, tone: 'error' })}
           authStatus={authStatus}
+          isAdmin={isAdmin}
         />
       ) : (
         // 2026-07-12 主人拍: 避免 'loading' / 'anonymous' 时 ProductLibraryView 挂载就发 /api/v1/products,
@@ -338,7 +339,8 @@ function AppInner() {
     )}
     {/* Static-test compatibility marker: !isDemoMode && <button className="fab" */}
     {/* 2026-07-11 BIP auth/RBAC: admin / logout 按钮已搬到 TopBar 右上角 UserMenu. 这里只剩 +Add / Generate. */}
-    {!isDemoMode && (
+    {/* 2026-07-13 主人拍: 普通用户 (role='user') 不显示 +Add / Generate. 创建 + 生图是 admin-only 操作. */}
+    {!isDemoMode && isAdmin && (
       <div className="floating-action-rail">
         {/* 2026-07-10: select-fab (cards 模式专有) 已删 */}
         <button className="fab add-fab" onClick={openProductCreate}><Plus/> {t('add')}</button>
@@ -346,7 +348,7 @@ function AppInner() {
       </div>
     )}
     {!isDemoMode && <GenerationQueueDrawer t={t} open={generationQueueOpen} onOpen={() => setGenerationQueueOpen(true)} onClose={() => setGenerationQueueOpen(false)} onOpenJob={openGenerationJob} />}
-    <ItemDetailModal t={t} id={detailId} uiLanguage={uiLanguage} preferredLanguage={preferredLanguage} clusters={localizedClusters} tags={tags} onClose={() => setDetailId(undefined)} onCopyPrompt={showCopyToast} onChanged={saved} onDelete={isDemoMode ? undefined : deleteDetail} onOpenItem={setDetailId} onEdit={(item) => { setDetailId(undefined); setEditing(item); setEditorOpen(true); }} showMutations={!isDemoMode} canGenerate={generationAvailable} promptVariablesEnabled={Boolean(appConfig?.features?.camelot?.percival)} initialGenerationJobId={focusedItemGenerationJobId} />
+    <ItemDetailModal t={t} id={detailId} uiLanguage={uiLanguage} preferredLanguage={preferredLanguage} clusters={localizedClusters} tags={tags} onClose={() => setDetailId(undefined)} onCopyPrompt={showCopyToast} onChanged={saved} onDelete={!isDemoMode && isAdmin ? deleteDetail : undefined} onOpenItem={setDetailId} onEdit={!isDemoMode && isAdmin ? (item) => { setDetailId(undefined); setEditing(item); setEditorOpen(true); } : undefined} showMutations={!isDemoMode && isAdmin} canGenerate={generationAvailable && isAdmin} promptVariablesEnabled={Boolean(appConfig?.features?.camelot?.percival)} initialGenerationJobId={focusedItemGenerationJobId} />
     {toast && <div className={`toast copy-toast elegant-toast ${toast.tone}`} role="status"><span className="toast-icon">{toast.tone === 'success' ? <Check size={16} /> : <XCircle size={16} />}</span><span className="toast-title">{toast.title}</span></div>}
     {editorOpen && <ItemEditorModal t={t} item={editing} clusters={localizedClusters} tags={tags} onClose={() => setEditorOpen(false)} onSaved={saved} onDeleted={deleted} />}
     {standaloneGenerationOpen && <GenerationPanel t={t} preferredLanguage={preferredLanguage} clusters={localizedClusters} tags={tags} promptVariablesEnabled={Boolean(appConfig?.features?.camelot?.percival)} initialJobId={focusedGenerationJobId} onClose={() => setStandaloneGenerationOpen(false)} onAccepted={(item, message) => { saved(); setToast({ title: message || 'New variant item created', tone: 'success' }); if (item?.id) setDetailId(item.id); }} />}

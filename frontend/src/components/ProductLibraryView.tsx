@@ -52,6 +52,7 @@ function ProductInfoPanel({
   onSaved,
   onCreateSubmit,
   t,
+  isAdmin = true,                  // 2026-07-13 主人拍: 普通用户只读, 不显示编辑按钮和 +新建 字典项
 }: {
   product: ProductDetail;
   editing: boolean;
@@ -60,6 +61,7 @@ function ProductInfoPanel({
   // 2026-07-05 09:35: 新建模式的保存回调. 不传 → 走 PATCH (编辑现有产品)
   onCreateSubmit?: (fields: { name: string; series?: string; category?: string; spec?: string; selling_points?: string; after_sales?: string; certifications?: string }) => Promise<ProductDetail>;
   t: Translator;
+  isAdmin?: boolean;
 }) {
   const [category, setCategory] = useState(product.category ?? '');
   const [name, setName] = useState(product.name);
@@ -218,7 +220,8 @@ function ProductInfoPanel({
       <div className="product-modal-col-header">
         <span className="product-modal-col-title">{t('productInfo') || '产品信息'}</span>
         <div className="product-modal-col-actions">
-          {!editing ? (
+          {/* 2026-07-13 主人拍: 普通用户不显示编辑/保存/取消 按钮, modal 是只读的 */}
+          {isAdmin && (!editing ? (
             <button type="button" className="product-modal-edit-toggle" onClick={onToggleEdit}>
               <Pencil size={11} /> {t('edit') || '编辑'}
             </button>
@@ -231,7 +234,7 @@ function ProductInfoPanel({
                 <Check size={11} /> {t('save') || '保存'}
               </button>
             </>
-          )}
+          ))}
         </div>
       </div>
       {error ? <div className="error" role="alert">{error}</div> : null}
@@ -254,7 +257,8 @@ function ProductInfoPanel({
                 >
                   <option value="">{t('categoryPlaceholder') || '— 未设置 —'}</option>
                   {categories.map(c => <option key={c.id} value={c.name}>{c.name} ({c.count})</option>)}
-                  <option value="__create__">{t('categoryCreateNew') || '+ 新建类别…'}</option>
+                  {/* 2026-07-13 主人拍: 普通用户不显示 +新建 类别 */}
+                  {isAdmin && <option value="__create__">{t('categoryCreateNew') || '+ 新建类别…'}</option>}
                 </select>
               </div>
               {creatingCategory ? (
@@ -289,7 +293,8 @@ function ProductInfoPanel({
                 >
                   <option value="">{t('seriesPlaceholder') || '— 未设置 —'}</option>
                   {seriesList.map(s => <option key={s.id} value={s.name}>{s.name} ({s.count})</option>)}
-                  <option value="__create__">{t('seriesCreateNew') || '+ 新建系列…'}</option>
+                  {/* 2026-07-13 主人拍: 普通用户不显示 +新建 系列 */}
+                  {isAdmin && <option value="__create__">{t('seriesCreateNew') || '+ 新建系列…'}</option>}
                 </select>
               </div>
               {creatingSeries ? (
@@ -458,6 +463,7 @@ function ProductPromptPanel({
   onToggleEdit,
   onSaved,
   t,
+  isAdmin = true,                  // 2026-07-13 主人拍: 普通用户只读, 不显示编辑/保存按钮
 }: {
   product: ProductDetail;
   selectedImage: ProductImageRecord | null;
@@ -465,6 +471,7 @@ function ProductPromptPanel({
   onToggleEdit: () => void;
   onSaved: (updated: ProductDetail) => void;
   t: Translator;
+  isAdmin?: boolean;
 }) {
   // 2026-07-06 16:42 主人拍重设计: 10 字段专业商品摄影 schema.
   // (展台 + 展台正面的 logo 独立, lighting 仅描述灯光)
@@ -540,7 +547,8 @@ function ProductPromptPanel({
       <div className="product-modal-col-header">
         <span className="product-modal-col-title">{t('productPrompt') || '提示词'} · #{selectedImage.id.slice(-6)}</span>
         <div className="product-modal-col-actions">
-          {!editing ? (
+          {/* 2026-07-13 主人拍: 普通用户不显示编辑/保存/取消 按钮 */}
+          {isAdmin && (!editing ? (
             <button type="button" className="product-modal-edit-toggle" onClick={onToggleEdit}>
               <Pencil size={11} /> {t('edit') || '编辑'}
             </button>
@@ -553,7 +561,7 @@ function ProductPromptPanel({
                 <Check size={11} /> {t('save') || '保存'}
               </button>
             </>
-          )}
+          ))}
         </div>
       </div>
       {/* 2026-07-04 21:51 主人拍: 图片基础信息 (只读, 自动识别) */}
@@ -766,7 +774,29 @@ function ProductPromptPanel({
 // 2026-07-05 09:27 主人拍: 新增产品默认进入信息编辑模式 (看到 Save 按键)
 // 2026-07-05 09:35 主人拍: +Add 弹出 create 模式, 调 onCreateSubmit 才 POST /products
 // 2026-07-05 09:56 主人拍 A 方案: +Delete product 按钮. onDeleted 回调通知 list refresh
-function ProductModal({ product, onClose, onUpdate, onDeleted, t, defaultInfoEditing = false, onCreateSubmit, initialSelectedImageId, imageCompressionEnabled }: { product: ProductDetail; onClose: () => void; onUpdate: (p: ProductDetail) => void; onDeleted?: (productId: number) => void; t: Translator; defaultInfoEditing?: boolean; onCreateSubmit?: (fields: { name: string; series?: string; category?: string; spec?: string; selling_points?: string; after_sales?: string; certifications?: string }) => Promise<ProductDetail>; initialSelectedImageId?: string | null; imageCompressionEnabled: boolean }) {
+function ProductModal({
+  product,
+  onClose,
+  onUpdate,
+  onDeleted,
+  t,
+  defaultInfoEditing = false,
+  onCreateSubmit,
+  initialSelectedImageId,
+  imageCompressionEnabled,
+  isAdmin = true,                  // 2026-07-13 主人拍: 普通用户只读, 隐藏所有 admin-only 按钮 (删除/上传/AI 反推/设封面/编辑信息/创建字典)
+}: {
+  product: ProductDetail;
+  onClose: () => void;
+  onUpdate: (p: ProductDetail) => void;
+  onDeleted?: (productId: number) => void;
+  t: Translator;
+  defaultInfoEditing?: boolean;
+  onCreateSubmit?: (fields: { name: string; series?: string; category?: string; spec?: string; selling_points?: string; after_sales?: string; certifications?: string }) => Promise<ProductDetail>;
+  initialSelectedImageId?: string | null;
+  imageCompressionEnabled: boolean;
+  isAdmin?: boolean;
+}) {
   const images = product.images || [];
   // 2026-07-10 主人拍: timeline 点缩略图时, ProductModal 中间大图 = 点中的那一张 (不是 cover).
   // initialSelectedImageId 传入时, 初始 selectedId 走它; 不传时 = 现状 (cover 优先 → 第一张).
@@ -1056,8 +1086,8 @@ function ProductModal({ product, onClose, onUpdate, onDeleted, t, defaultInfoEdi
             ) : null}
             <h2 className="product-modal-model-title">{product.name}</h2>
             <span className="product-modal-model-meta">#{product.id} · source {product.source_id}</span>
-            {/* 2026-07-05 09:56 主人拍 A 方案: 删除产品按钮 (仅查看模式, id>0) */}
-            {product.id > 0 && (
+            {/* 2026-07-05 09:56 主人拍 A 方案: 删除产品按钮 (仅查看模式, id>0). 2026-07-13 主人拍: 仅 admin 可见 */}
+            {isAdmin && product.id > 0 && (
               <button
                 type="button"
                 className="product-modal-delete-btn"
@@ -1087,6 +1117,7 @@ function ProductModal({ product, onClose, onUpdate, onDeleted, t, defaultInfoEdi
               onSaved={onUpdate}
               onCreateSubmit={onCreateSubmit}
               t={t}
+              isAdmin={isAdmin}
             />
             <div className="product-modal-col" style={{ padding: 12 }}>
               <div className="product-modal-col-header">
@@ -1103,7 +1134,8 @@ function ProductModal({ product, onClose, onUpdate, onDeleted, t, defaultInfoEdi
                     {selectedImage.is_cover ? (
                       <span className="product-modal-main-image-caption">★ {t('coverBadge') || '封面'}</span>
                     ) : null}
-                    {/* 2026-07-06 19:12 主人拍: 大图左下角删除按钮 (替代 idx/n 数量) */}
+                    {/* 2026-07-06 19:12 主人拍: 大图左下角删除按钮 (替代 idx/n 数量). 2026-07-13 主人拍: 仅 admin 可见 */}
+                    {isAdmin && (
                     <button
                       type="button"
                       className="product-modal-main-image-delete"
@@ -1116,9 +1148,11 @@ function ProductModal({ product, onClose, onUpdate, onDeleted, t, defaultInfoEdi
                     >
                       <Trash2 size={20} strokeWidth={2} />
                     </button>
+                    )}
                     {/* 2026-07-06 19:12 主人拍: 大图脚下 4 按钮容器 (设封面 / 反推 / 复制 / 下载) */}
                     <div className="product-modal-main-image-foot">
-                      {/* 1. 设封面 — 仅非封面图可点; 已是封面者禁用 */}
+                      {/* 1. 设封面 — 仅非封面图可点; 已是封面者禁用. 2026-07-13 主人拍: 仅 admin 可见 */}
+                      {isAdmin && (
                       <button
                         type="button"
                         className="product-modal-main-image-setcover"
@@ -1129,7 +1163,9 @@ function ProductModal({ product, onClose, onUpdate, onDeleted, t, defaultInfoEdi
                       >
                         <Star size={20} fill={selectedImage.is_cover ? 'currentColor' : 'none'} strokeWidth={2} />
                       </button>
-                      {/* 2. AI 反推 */}
+                      )}
+                      {/* 2. AI 反推 — 2026-07-13 主人拍: 仅 admin 可见 */}
+                      {isAdmin && (
                       <button
                         type="button"
                         className={`product-modal-main-image-ai${analyzing === selectedImage.id ? ' is-analyzing' : ''}`}
@@ -1140,6 +1176,7 @@ function ProductModal({ product, onClose, onUpdate, onDeleted, t, defaultInfoEdi
                       >
                         {analyzing === selectedImage.id ? <Loader2 size={20} className="spin" /> : <Sparkles size={20} fill="currentColor" />}
                       </button>
+                      )}
                       {/* 3. 复制 */}
                       <button
                         type="button"
@@ -1179,6 +1216,7 @@ function ProductModal({ product, onClose, onUpdate, onDeleted, t, defaultInfoEdi
               onToggleEdit={() => { setPromptEditing(v => !v); setError(null); }}
               onSaved={onUpdate}
               t={t}
+              isAdmin={isAdmin}
             />
           </div>
 
@@ -1210,7 +1248,8 @@ function ProductModal({ product, onClose, onUpdate, onDeleted, t, defaultInfoEdi
                   ) : null}
                 </div>
               ))}
-              {/* 上传区放在尾部 */}
+              {/* 上传区放在尾部. 2026-07-13 主人拍: 仅 admin 可见. 普通用户没有上传权限. */}
+              {isAdmin && (
               <div
                 className={`product-modal-upload-slot${dragOver ? ' is-dragging' : ''}${atLimit ? ' is-disabled' : ''}`}
                 onDragOver={e => { if (!atLimit) { e.preventDefault(); setDragOver(true); } }}
@@ -1233,6 +1272,7 @@ function ProductModal({ product, onClose, onUpdate, onDeleted, t, defaultInfoEdi
                   onChange={e => { if (e.target.files) uploadFiles(e.target.files); e.target.value = ''; }}
                 />
               </div>
+              )}
             </div>
           </div>
         </div>
@@ -1397,6 +1437,7 @@ export default function ProductLibraryView({
   onProductsCountChange,            // 2026-07-12 主人拍: products 数量推回 TopBar
   onNewProductLoadError,            // 2026-07-12 主人拍: 加载新产品失败时通知顶层弹 toast
   authStatus,                        // 2026-07-12 主人拍: 守护 list 请求, 避免 401 闪烁
+  isAdmin = true,                    // 2026-07-13 主人拍: 守护 admin-only 操作, 默认 true 保持单测/旧调用方兼容
 }: {
   t: Translator;
   q?: string;
@@ -1412,6 +1453,9 @@ export default function ProductLibraryView({
   onNewProductLoadError?: (message: string) => void;
   // 2026-07-12 主人拍: 'loading' | 'anonymous' | 'authenticated'. 用于守护 list 请求, 避免 401 闪烁.
   authStatus?: 'loading' | 'anonymous' | 'authenticated';
+  // 2026-07-13 主人拍: 普通用户 (role='user') 不显示编辑/删除/上传/AI 反推/创建字典 等 admin-only 操作.
+  // user 看到的 modal 是只读的: 不能新建, 不能改, 不能删, 不能上传图, 不能 AI 反推.
+  isAdmin?: boolean;
 }) {
   // 2026-07-11 主人拍: 把 config 里的 globalThumbnailBudget 接到瀑布流 (timeline masonry 张数 / grid 卡片数).
   // 列表用 ProductDetail (含 images 字段, 也兼容 4caf16a 的 spec/selling_points 字段)
@@ -1531,15 +1575,17 @@ export default function ProductLibraryView({
           initialSelectedImageId={initialSelectedImageId}
           // 2026-07-10 11:03 主人拍: 压缩开关. 传到 ProductModal 给 uploadFiles 用.
           imageCompressionEnabled={imageCompressionEnabled}
-          // 2026-07-05 09:27 主人拍: 新建产品默认进入编辑模式 (Save 按键可见)
-          defaultInfoEditing={activeProduct.id === -1 || activeProduct.id === newProductId}
+          // 2026-07-13 主人拍: 普通用户不进入编辑模式, 不显示 admin-only 按钮.
+          isAdmin={isAdmin}
+          // 2026-07-05 09:27 主人拍: 新建产品默认进入编辑模式 (Save 按键可见). 普通用户永远不进入编辑模式.
+          defaultInfoEditing={isAdmin && (activeProduct.id === -1 || activeProduct.id === newProductId)}
           // 2026-07-05 09:56 主人拍 A 方案: 删除产品回调
           onDeleted={(productId) => {
             setActiveProduct(null);
             setProducts(prev => prev.filter(p => p.id !== productId));
           }}
-          // 2026-07-05 09:35 主人拍: 新建模式调 onCreateSubmit → POST /products (未点 Save 不入库)
-          onCreateSubmit={activeProduct.id === -1 ? async (fields) => {
+          // 2026-07-13 主人拍: 普通用户不传 onCreateSubmit, 阻断 +Add 触发的创建流程 (App.tsx 也不会给 user 触发)
+          onCreateSubmit={isAdmin && activeProduct.id === -1 ? async (fields) => {
             const res = await fetch('/api/v1/products', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },

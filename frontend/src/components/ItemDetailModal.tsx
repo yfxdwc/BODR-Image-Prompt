@@ -184,7 +184,8 @@ export default function ItemDetailModal({
   tags: TagRecord[];
   onClose: () => void;
   onCopyPrompt: (success: boolean) => void;
-  onEdit: (item: ItemDetail) => void;
+  // 2026-07-13 主人拍: 普通用户不传 onEdit, 内部相关按钮都不可见 (showMutations=false 也已守护).
+  onEdit?: (item: ItemDetail) => void;
   onChanged: () => void;
   onDelete?: (item: ItemDetail) => void;
   onOpenItem?: (id: string) => void;
@@ -507,7 +508,7 @@ export default function ItemDetailModal({
                       <button className="modal-icon-button favorite-button" onClick={toggleFavorite} aria-label={item.favorite ? t('saved') : t('favorite')}>
                         <Heart size={18} fill={item.favorite ? 'currentColor' : 'none'} />
                       </button>
-                      <button className="modal-icon-button edit-button" onClick={() => onEdit(item)} aria-label={t('edit')}>
+                      <button className="modal-icon-button edit-button" onClick={() => onEdit?.(item)} aria-label={t('edit')}>
                         <Pencil size={18} />
                       </button>
                       <button className="modal-icon-button detail-delete-button" onClick={() => onDelete?.(item)} aria-label={t('deleteReference')} title={t('deleteReference')}>
@@ -530,7 +531,7 @@ export default function ItemDetailModal({
                     {showMutations && <button className="modal-icon-button favorite-button" onClick={toggleFavorite} aria-label={item.favorite ? t('saved') : t('favorite')}>
                       <Heart size={18} fill={item.favorite ? 'currentColor' : 'none'} />
                     </button>}
-                    {showMutations && <button className="modal-icon-button edit-button" onClick={() => onEdit(item)} aria-label={t('edit')}>
+                    {showMutations && <button className="modal-icon-button edit-button" onClick={() => onEdit?.(item)} aria-label={t('edit')}>
                       <Pencil size={18} />
                     </button>}
                     {showMutations && <button className="modal-icon-button detail-delete-button" onClick={() => onDelete?.(item)} aria-label={t('deleteReference')} title={t('deleteReference')}>
