@@ -827,29 +827,34 @@ class ProductRepository:
         return cur.lastrowid
 
     def _get_or_create_series_id(self, conn, name: Optional[str], category_id: Optional[int] = None) -> Optional[int]:
+        """2026-07-13 主人拍: series name 全局唯一 (跨 category).
+        之前按 (category_id, name) 局部去重导致蝉翼/飓风 重复, 已由 migration 025 合并清理.
+        行为: 先按 name COLLATE NOCASE 全库查, 命中即返回; 不命中则 INSERT (新行).
+        如果传了 category_id 且现存行的 category_id 跟传入的不同, 更新到传入值 (修正漂移)."""
         if name is None:
             return None
         clean = name.strip()
         if not clean:
             return None
-        # 按 category_id + name 检查（category_id=None 视为全局唯一）
-        if category_id is not None:
-            row = conn.execute(
-                "SELECT id FROM series_dict WHERE name=? COLLATE NOCASE AND category_id=?",
-                (clean, category_id)
-            ).fetchone()
-        else:
-            row = conn.execute(
-                "SELECT id FROM series_dict WHERE name=? COLLATE NOCASE AND category_id IS NULL",
-                (clean,)
-            ).fetchone()
+        row = conn.execute(
+            "SELECT id, category_id FROM series_dict WHERE name=? COLLATE NOCASE",
+            (clean,),
+        ).fetchone()
         if row is not None:
+            # 修正 category_id 漂移: 字典里的 series 必须跟传入的 category 一致
+            if category_id is not None and row["category_id"] != category_id:
+                conn.execute(
+                    "UPDATE series_dict SET category_id=? WHERE id=?",
+                    (category_id, row["id"]),
+                )
             return row["id"]
         if category_id is not None:
-            cur = conn.execute("INSERT INTO series_dict(name, category_id) VALUES(?, ?)", (clean, category_id))
+            cur = conn.execute(
+                "INSERT INTO series_dict(name, category_id) VALUES(?, ?)",
+                (clean, category_id),
+            )
         else:
             cur = conn.execute("INSERT INTO series_dict(name) VALUES(?)", (clean,))
-        conn.commit()
         return cur.lastrowid
 
     def list_categories(self) -> list:
@@ -933,7 +938,18 @@ class ProductRepository:
                     (cat_id, now, product_id),
                 )
             if "series" in getattr(body, "model_fields_set", set()):
-                ser_id = self._get_or_create_series_id(conn, body.series)
+                # 2026-07-13 主人拍: series 全库唯一, 但需要确定它的 category_id.
+                # 优先级: body.category > products.category_id > None
+                cat_id = None
+                if "category" in getattr(body, "model_fields_set", set()) and body.category:
+                    cat_row = conn.execute(
+                        "SELECT id FROM categories WHERE name=? COLLATE NOCASE", (body.category.strip(),)
+                    ).fetchone()
+                    cat_id = cat_row["id"] if cat_row else None
+                if cat_id is None:
+                    cur_row = conn.execute("SELECT category_id FROM products WHERE id=?", (product_id,)).fetchone()
+                    cat_id = cur_row["category_id"] if cur_row else None
+                ser_id = self._get_or_create_series_id(conn, body.series, category_id=cat_id)
                 conn.execute(
                     "UPDATE products SET series_id=?, updated_at=? WHERE id=?",
                     (ser_id, now, product_id),

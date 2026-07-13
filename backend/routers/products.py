@@ -212,7 +212,8 @@ def create_category(request: Request, body: CategoryCreate) -> CategoryList:
     if not name:
         raise HTTPException(status_code=400, detail="Category name is required")
     repo = _get_repo(request)
-    # _get_or_create_category_id 内部用 COLLATE NOCASE 去重, dup → IntegrityError → 409
+    # 2026-07-13 主人拍: categories 唯一性双重守护. 本路由显式 SELECT (COLLATE NOCASE) 查重,
+    # INSERT 路径上还有触发器 trg_categories_unique_nocase_insert/update + 原 UNIQUE 约束 (BINARY) 兜底.
     try:
         import sqlite3 as _sq
         with connect(request.app.state.library_path) as conn:
@@ -259,11 +260,26 @@ def create_series(request: Request, body: SeriesCreate) -> SeriesList:
     try:
         import sqlite3 as _sq
         with connect(request.app.state.library_path) as conn:
-            repo._get_or_create_series_id(conn, name, category_id=body.category_id)
+            # 2026-07-13 主人拍: series name 全局唯一 (跨 category). 重名 → 409, 不再 get-or-create 静默复用.
+            dup = conn.execute(
+                "SELECT id, category_id FROM series_dict WHERE name=? COLLATE NOCASE",
+                (name,),
+            ).fetchone()
+            if dup is not None:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Series '{name}' already exists (id={dup['id']}, category_id={dup['category_id']})"
+                )
+            conn.execute(
+                "INSERT INTO series_dict(name, category_id) VALUES(?, ?)",
+                (name, body.category_id),
+            )
+    except HTTPException:
+        raise
     except _sq.IntegrityError as exc:
         raise HTTPException(
             status_code=409,
-            detail=f"Series '{name}' already exists in category (id={body.category_id})"
+            detail=f"Series '{name}' already exists"
         ) from exc
     items = repo.list_series(category_id=body.category_id)
     return SeriesList(items=items, total=len(items))
