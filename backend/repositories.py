@@ -884,7 +884,11 @@ class ProductRepository:
                     "GROUP BY s.id ORDER BY s.name"
                 ).fetchall()
             else:
-                # 按 category 过滤: 返回该 category 的所有 series，统计该 category 下属于此 series 的产品数
+                # 按 category 过滤: 返回该 category 下有产品 (或 series.cat_id 命中) 的所有 series.
+                # 2026-07-13 主人拍 ZBAN 案例: ZBAN 系列被 3 个产品用, 跨 浴霸/凉霸/LED灯 3 个 category.
+                # 旧逻辑 'WHERE s.category_id = ?' 会让 ZBAN 只在它当前 cat_id=4 (LED灯) 下显示,
+                # 浴霸和凉霸下的 ZBAN 产品在 list_series 下拉里看不到自己的 series.
+                # 改: 包含 (a) series.cat_id = ? (字典归属) 或 (b) 该 category 下有产品 (产品归属).
                 rows = conn.execute(
                     """
                     SELECT s.id, s.name, s.created_at,
@@ -893,10 +897,12 @@ class ProductRepository:
                     LEFT JOIN products p
                       ON p.series_id = s.id AND p.category_id = ?
                     WHERE s.category_id = ?
+                       OR EXISTS (SELECT 1 FROM products p2
+                                  WHERE p2.series_id = s.id AND p2.category_id = ?)
                     GROUP BY s.id
                     ORDER BY s.name
                     """,
-                    (category_id, category_id),
+                    (category_id, category_id, category_id),
                 ).fetchall()
         return [SeriesRecord(**dict(r)) for r in rows]  
 
