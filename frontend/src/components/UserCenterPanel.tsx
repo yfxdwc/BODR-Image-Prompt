@@ -11,7 +11,7 @@ function formatTime(iso?: string | null): string {
 //   - 下方 tab 区 (admin 用户看: 审批 / 用户 / Audit; 普通用户空)
 
 import { useEffect, useState } from 'react';
-import { LogOut, ShieldCheck, X } from 'lucide-react';
+import { LogOut, ShieldCheck, X, Shield, User, Lock, Unlock } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { useDrawer } from '../auth/DrawerContext';
 import { authApi } from '../auth/api';
@@ -278,6 +278,15 @@ function UserAdminRow({ user, busy, onSetRole, onUpdated, setBusy, setError }: {
     }
   };
   const initial = (user.username || '?').slice(0, 1).toUpperCase();
+  const RoleIcon = user.role === 'admin' ? Shield : User;
+  const isAdmin = user.role === 'admin';
+  const handleRoleClick = () => onSetRole(user.id, isAdmin ? 'user' : 'admin');
+  const handleNoteClick = () => { if (!editing) setEditing(true); };
+  const handleNoteBlur = () => {
+    // 失焦时若内容有变则保存, 否则收起
+    if (noteName !== (user.note_name || '')) handleSaveNote();
+    else setEditing(false);
+  };
   return (
     <div className={`admin-row${isLocked ? ' is-locked' : ''}`}>
       <div className={`admin-row-avatar role-${user.role}`}>
@@ -289,9 +298,7 @@ function UserAdminRow({ user, busy, onSetRole, onUpdated, setBusy, setError }: {
       <div className="admin-row-head">
         <div className="admin-row-name">{user.username}</div>
         <div className="admin-row-chips">
-          <span className={`admin-chip role-${user.role}`}>{user.role}</span>
           {isLocked && <span className="admin-chip is-locked" title={user.locked_reason || '账号已锁定'}>🔒 已锁定</span>}
-          {user.note_name && <span className="admin-chip note-chip" title={user.note_name}>📝 {user.note_name}</span>}
         </div>
       </div>
       <div className="admin-row-email" title={user.email}>{user.email}</div>
@@ -300,39 +307,50 @@ function UserAdminRow({ user, busy, onSetRole, onUpdated, setBusy, setError }: {
         {user.last_login_at && <span className="meta-item">🔑 最近登录 {formatTime(user.last_login_at)}</span>}
       </div>
       {isLocked && user.locked_reason && <div className="lock-reason">🔒 锁定原因: {user.locked_reason}</div>}
-      {editing && (
-        <div className="admin-row-edit">
-          <label className="admin-edit-field">
-            <span>备注名</span>
-            <input
-              type="text"
-              value={noteName}
-              onChange={e => setNoteName(e.target.value)}
-              placeholder="仅方便管理员识别成员"
-              maxLength={64}
-            />
-          </label>
-          <div className="admin-edit-actions">
-            <button className="primary small" disabled={busy} onClick={handleSaveNote}>保存备注</button>
-            <button className="secondary small" disabled={busy} onClick={() => { setEditing(false); setNoteName(user.note_name || ''); }}>取消</button>
-          </div>
-        </div>
-      )}
+      <div className="admin-row-note-line">
+        <span className="admin-row-note-label">📝 备注</span>
+        {editing ? (
+          <input
+            className="admin-row-note-input"
+            type="text"
+            value={noteName}
+            onChange={e => setNoteName(e.target.value)}
+            onBlur={handleNoteBlur}
+            onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') { setNoteName(user.note_name || ''); setEditing(false); } }}
+            placeholder="点击备注名直接编辑"
+            maxLength={64}
+            autoFocus
+          />
+        ) : (
+          <span
+            className="admin-row-note-value"
+            onClick={handleNoteClick}
+            title="点击编辑备注"
+          >
+            {user.note_name || <em className="muted">点击添加备注</em>}
+          </span>
+        )}
+      </div>
       <div className="admin-row-actions">
-        {!editing && <button className="secondary small" disabled={busy} onClick={() => setEditing(true)}>编辑备注</button>}
-        {user.role !== 'admin' && (
-          <button className="secondary small" disabled={busy} onClick={() => onSetRole(user.id, 'admin')}>提升 admin</button>
-        )}
-        {user.role === 'admin' && (
-          <button className="secondary small" disabled={busy} onClick={() => onSetRole(user.id, 'user')}>降为 user</button>
-        )}
         <button
-          className={`small ${isLocked ? 'ghost' : 'danger'}`}
+          className={`iconbtn role-toggle role-${user.role}`}
+          disabled={busy}
+          onClick={handleRoleClick}
+          title={isAdmin ? '降为 user' : '提升为 admin'}
+          aria-label={isAdmin ? '降为 user' : '提升为 admin'}
+        >
+          <RoleIcon size={14} strokeWidth={2.4} />
+          <span>{isAdmin ? 'admin' : 'user'}</span>
+        </button>
+        <button
+          className={`iconbtn ${isLocked ? 'lock-off' : 'lock-on'}`}
           disabled={busy}
           onClick={handleToggleLock}
-          title={isLocked ? '解除锁定' : '锁定后该用户无法登录，需重新申请'}
+          title={isLocked ? '解除锁定' : '锁定该用户'}
+          aria-label={isLocked ? '解除锁定' : '锁定该用户'}
         >
-          {isLocked ? '解锁' : '锁定'}
+          {isLocked ? <Unlock size={14} strokeWidth={2.4} /> : <Lock size={14} strokeWidth={2.4} />}
+          <span>{isLocked ? '解锁' : '锁定'}</span>
         </button>
       </div>
     </div>
