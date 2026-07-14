@@ -41,10 +41,16 @@ def _user_public(rec) -> UserPublic:
 
 # ── 用户列表 ──────────────────────────────────────────────────────────────────
 @router.get("/admin/users")
-def list_users(request: Request, _admin=Depends(require_admin)):
+def list_users(request: Request, include_deleted: bool = Query(False, alias="include_deleted"),
+               _admin=Depends(require_admin)):
+    """2026-07-14 主人拍: 默认隐藏软删 (role=rejected) 用户, 保持 UI 干净.
+    软删账号在数据库里仍占位以保留审计链, 但管理员日常看不到.
+    include_deleted=true 可以一次性查全 (审计场景)."""
     svc = _service(request)
     with connect(request.app.state.library_path) as conn:
         users = svc.users.list_all(conn)
+    if not include_deleted:
+        users = [u for u in users if u.role != "rejected"]
     return {"items": [_user_public(u).model_dump() for u in users], "total": len(users)}
 
 
