@@ -803,14 +803,16 @@ textarea.product-info-input{min-height:60px}
 .config-tabs button:hover:not(.active){background:rgba(122,108,145,.10)}
 .admin-tab-body{padding:14px;display:flex;flex-direction:column;gap:10px;overflow:auto;max-height:calc(100vh - 240px)}
 /* 2026-07-14 主人拍: 卡片化重排. 左侧头像 + 状态点, 中间信息分层, 右侧动作按钮. */
-.admin-row{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid rgba(122,108,115,.18);border-radius:18px;background:linear-gradient(180deg,#ffffff 0%,#fbf9f6 100%);box-shadow:0 4px 16px rgba(33,25,34,.04);transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease}
+/* 2026-07-14 主人拍: 用户卡片重排版. 上下分层, 解决按钮/文字/换行错乱. */
+.admin-row{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:14px;row-gap:10px;align-items:start;padding:14px 16px;border:1px solid rgba(122,108,115,.18);border-radius:18px;background:linear-gradient(180deg,#ffffff 0%,#fbf9f6 100%);box-shadow:0 4px 16px rgba(33,25,34,.04);transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease}
 .admin-row:hover{border-color:rgba(109,93,252,.36);box-shadow:0 8px 22px rgba(33,25,34,.07);transform:translateY(-1px)}
-.admin-row-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.admin-row-main{grid-column:2;min-width:0;display:flex;flex-direction:column;gap:8px;align-self:start}
 .admin-row-main strong{font-size:14.5px;color:#1f1726;letter-spacing:-.01em}
 .admin-row-main .small{font-size:11.5px;margin-top:0}
 .admin-row-reason{margin-top:6px;padding:7px 9px;background:rgba(122,108,145,.08);border-radius:8px;font-size:12.5px;color:#3d334a;white-space:pre-wrap}
-.admin-row-actions{display:flex;gap:6px;flex-shrink:0;align-items:center;flex-wrap:wrap;justify-content:flex-end}
-.admin-row-actions button.small{padding:7px 12px;border-radius:11px;border:0;font-size:12px;font-weight:850;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease,background .12s ease}
+.admin-row-actions{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end;padding-top:4px;border-top:1px dashed rgba(122,108,115,.18);margin-top:2px}
+.admin-row-actions button.small{padding:8px 14px;border-radius:11px;border:0;font-size:12.5px;font-weight:800;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease,background .12s ease;display:inline-flex;align-items:center;gap:5px;line-height:1}
+.admin-row-actions button.small:hover{transform:translateY(-1px)}
 .admin-row-actions button.primary{background:linear-gradient(135deg,#6d5dfc,#9b6dff);color:#fff;box-shadow:0 6px 16px rgba(109,93,252,.24)}
 .admin-row-actions button.primary:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(109,93,252,.30)}
 .admin-row-actions button.secondary{background:#f0eadf;color:#372b3a}
@@ -821,7 +823,7 @@ textarea.product-info-input{min-height:60px}
 .admin-row-actions button.ghost:hover{background:rgba(122,108,115,.08)}
 
 /* 头像 */
-.admin-row-avatar{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,#6d5dfc,#9b6dff);color:#fff;font-weight:900;font-size:16px;letter-spacing:-.01em;flex-shrink:0;box-shadow:0 6px 16px rgba(109,93,252,.22);position:relative}
+.admin-row-avatar{grid-column:1;grid-row:1;width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,#6d5dfc,#9b6dff);color:#fff;font-weight:900;font-size:18px;letter-spacing:-.01em;box-shadow:0 6px 16px rgba(109,93,252,.22);position:relative}
 .admin-row-avatar.role-admin{background:linear-gradient(135deg,#f59e0b,#f43f5e)}
 .admin-row-avatar.role-user{background:linear-gradient(135deg,#3b82f6,#6366f1)}
 .admin-row-avatar.role-pending{background:linear-gradient(135deg,#94a3b8,#64748b)}
@@ -831,9 +833,9 @@ textarea.product-info-input{min-height:60px}
 .admin-row-avatar .status-dot.is-pending{background:#f59e0b}
 
 /* 标题行 */
-.admin-row-title{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-.admin-row-username{font-size:15px;font-weight:900;color:#1f1726;letter-spacing:-.01em}
-.admin-row-email{font-size:12.5px;color:#6c5e74}
+.admin-row-title{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px;min-width:0}
+.admin-row-username{font-size:15px;font-weight:900;color:#1f1726;letter-spacing:-.01em;flex-shrink:0}
+.admin-row-email{font-size:12.5px;color:#6c5e74;word-break:break-all;opacity:.85}
 
 /* 角色 / 状态 chip */
 .admin-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:850;letter-spacing:.02em;line-height:1.4;white-space:nowrap}
@@ -845,13 +847,13 @@ textarea.product-info-input{min-height:60px}
 .admin-chip.note-chip{background:rgba(33,25,34,.06);color:#3d334a;border:1px solid rgba(33,25,34,.10);max-width:240px;overflow:hidden;text-overflow:ellipsis}
 
 /* 信息行 */
-.admin-row-meta{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:#6c5e74}
-.admin-row-meta .meta-item{display:inline-flex;align-items:center;gap:5px}
+.admin-row-meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:#6c5e74;align-items:center}
+.admin-row-meta .meta-item{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .admin-row-meta code{background:rgba(122,108,115,.10);padding:1px 6px;border-radius:5px;font-size:11.5px;color:#3d334a}
 .lock-reason{margin-top:4px;padding:6px 10px;background:rgba(220,53,69,.08);border:1px solid rgba(220,53,69,.20);border-radius:10px;color:#a51d13;font-size:12.5px;line-height:1.5}
 
 /* 行内编辑 */
-.admin-row-edit{margin-top:8px;display:flex;flex-direction:column;gap:8px;padding:12px;background:rgba(33,25,34,.04);border:1px dashed rgba(33,25,34,.16);border-radius:12px}
+.admin-row-edit{grid-column:2;margin-top:4px;display:flex;flex-direction:column;gap:8px;padding:12px;background:rgba(33,25,34,.04);border:1px dashed rgba(33,25,34,.16);border-radius:12px}
 .admin-edit-field{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:#1f1726;font-weight:700}
 .admin-edit-field input{padding:8px 11px;border:1px solid rgba(33,25,34,.16);border-radius:9px;background:white;font-size:13px;font-weight:400;color:#1f1726}
 .admin-edit-field input:focus{outline:2px solid rgba(109,93,252,.36);outline-offset:1px;border-color:transparent}
@@ -900,7 +902,7 @@ textarea.product-info-input{min-height:60px}
   .config-tabs{padding:0 10px 10px}
   .admin-tab-body{max-height:calc(100vh - 200px)}
   .admin-row{flex-direction:column;align-items:stretch}
-  .admin-row-actions{justify-content:flex-end}
+  .admin-row-actions{justify-content:flex-end;flex-direction:column;align-items:stretch}
 }
 
 /* ── 2026-07-12 主人拍: 6 项同排单行. [站点图标][品牌名][搜索][视图][设置齿轮][用户中心] ─ */
@@ -1108,7 +1110,7 @@ mark.search-highlight{
 
 /* 2026-07-14 主人拍: 用户中心"用户"Tab 行内编辑 + 锁定徽章 */
 .admin-row-title{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
-.admin-row.is-locked{background:rgba(220,53,69,.04);border-color:rgba(220,53,69,.20)}
+.admin-row.is-locked{background:linear-gradient(180deg,#fff5f4 0%,#fde7e3 100%);border-color:rgba(220,53,69,.30)}
 .locked-badge{background:rgba(220,53,69,.12);color:#a51d13;border:1px solid rgba(220,53,69,.30);border-radius:999px;padding:2px 8px;font-size:11.5px;font-weight:800;letter-spacing:.02em}
 .admin-note-tag{font-style:italic}
 .lock-reason{margin-top:4px;color:#a51d13;font-size:12.5px}
