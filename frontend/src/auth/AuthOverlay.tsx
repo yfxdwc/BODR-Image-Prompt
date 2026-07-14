@@ -8,6 +8,8 @@ export function AuthOverlay() {
   const { status, login, register, user } = useAuth();
   const [mode, setMode] = useState<'login' | 'register' | 'pending'>('login');
   const [error, setError] = useState<string | null>(null);
+  // 2026-07-14 主人拍: 锁定账户 (HTTP 423) 时, 用专用提示
+  const [locked, setLocked] = useState<{ reason: string; message: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
   // 表单 state
@@ -31,7 +33,23 @@ export function AuthOverlay() {
     try {
       await login({ username: username.trim(), password });
     } catch (err: any) {
+      // 2026-07-14 主人拍: 423 account_locked 错误码 (FastAPI 返回 detail={code, reason, message})
+      const status = (err && (err as any).status) as number | undefined;
+      if (status === 423) {
+        // 401 时 err.message 已是 string; 423 时 detail 是对象. request() 把 detail 透出到 err.message
+        // 这里用 message 作为显示文本, 同时把 detail 解析后给锁定提示.
+        try {
+          const parsed = JSON.parse(err.message);
+          if (parsed && parsed.code === "account_locked") {
+            setLocked({ reason: parsed.reason || "请联系管理员", message: parsed.message || "账号已被锁定" });
+            setError(null);
+            setBusy(false);
+            return;
+          }
+        } catch { /* fallthrough */ }
+      }
       setError(err?.message || 'login failed');
+      setLocked(null);
     } finally {
       setBusy(false);
     }
@@ -91,7 +109,22 @@ export function AuthOverlay() {
                   disabled={busy}
                 />
               </label>
-              {error && <div className="auth-overlay-error">{error}</div>}
+              {locked && (
+                <div className="auth-overlay-locked" role="alert">
+                  <div className="auth-overlay-locked-title">🔒 您的账号已被锁定</div>
+                  <div className="auth-overlay-locked-msg">{locked.message}</div>
+                  {locked.reason && <div className="auth-overlay-locked-reason">原因: {locked.reason}</div>}
+                  <div className="auth-overlay-locked-hint">请使用本页"申请注册"重新提交一份新申请，并在理由中说明身份。</div>
+                  <button
+                    type="button"
+                    className="auth-overlay-link"
+                    onClick={() => { setLocked(null); setMode('register'); setError(null); }}
+                  >
+                    前往重新申请 →
+                  </button>
+                </div>
+              )}
+              {!locked && error && <div className="auth-overlay-error">{error}</div>}
               <button type="submit" className="auth-overlay-submit primary" disabled={busy}>
                 {busy ? '登录中…' : '登录'}
               </button>

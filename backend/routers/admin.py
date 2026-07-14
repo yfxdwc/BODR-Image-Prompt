@@ -18,6 +18,7 @@ from backend.schemas import (
     AuditPage,
     RegistrationRequestPublic,
     UserCreateAdmin,
+    UserMetaUpdate,
     UserPublic,
 )
 
@@ -33,6 +34,8 @@ def _user_public(rec) -> UserPublic:
         id=rec.id, email=rec.email, username=rec.username, role=rec.role,
         display_name=rec.display_name, created_at=rec.created_at,
         approved_at=rec.approved_at, last_login_at=rec.last_login_at,
+        # 2026-07-14 主人拍: 管理员备注 + 锁定
+        note_name=rec.note_name, is_locked=bool(rec.is_locked), locked_reason=rec.locked_reason,
     )
 
 
@@ -58,6 +61,45 @@ def set_role(user_id: str, new_role: str, request: Request,
     )
 
 
+
+
+# ── 改用户元信息 (备注 / 锁定) ───────────────────────────────────────────────
+@router.patch("/admin/users/{user_id}/meta")
+def set_user_meta(user_id: str, body: UserMetaUpdate, request: Request,
+                  admin=Depends(require_admin)):
+    """2026-07-14 主人拍: 管理员在用户中心编辑备注/锁定.
+    body: { note_name?: string, is_locked?: bool, locked_reason?: string }
+    字段不传视为不改; 传空串视为清空. 锁定时自动清掉该用户所有 session, 强制下线.
+    """
+    svc = _service(request)
+    with connect(request.app.state.library_path) as conn:
+        target = svc.users.get_by_id(conn, user_id)
+        if not target:
+            raise HTTPException(404, "user not found")
+        # 不能锁定最后一个 admin
+        if body.is_locked and target.role == "admin" and svc.users.count_admins(conn) <= 1:
+            raise HTTPException(409, "cannot lock the last admin")
+        svc.users.update_meta(
+            conn, user_id,
+            note_name=body.note_name,
+            is_locked=body.is_locked,
+            locked_reason=body.locked_reason,
+        )
+        # 锁定时吊销 session 强制下线
+        if body.is_locked:
+            try:
+                svc.sessions.revoke_all_for_user(conn, user_id)
+            except Exception:
+                pass
+        write_audit(
+            conn, user_id=admin.id, action="admin_set_user_meta",
+            resource_type="user", resource_id=user_id, ip=client_ip(request),
+            metadata={"is_locked": body.is_locked, "note_name": body.note_name},
+        )
+        conn.commit()
+        # 重新读最新记录返回
+        target = svc.users.get_by_id(conn, user_id)
+    return _user_public(target).model_dump()
 # ── 删用户 (软删) ─────────────────────────────────────────────────────────────
 @router.delete("/admin/users/{user_id}", status_code=204)
 def delete_user(user_id: str, request: Request,

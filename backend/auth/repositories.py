@@ -28,6 +28,10 @@ class UserRecord:
     rejected_at: Optional[str]
     rejected_reason: Optional[str]
     last_login_at: Optional[str]
+    # 2026-07-14 主人拍: 管理员备注 + 锁定
+    note_name: Optional[str] = None
+    is_locked: int = 0
+    locked_reason: Optional[str] = None
 
 
 def _row_to_user(row: sqlite3.Row) -> UserRecord:
@@ -44,6 +48,10 @@ def _row_to_user(row: sqlite3.Row) -> UserRecord:
         rejected_at=row["rejected_at"],
         rejected_reason=row["rejected_reason"],
         last_login_at=row["last_login_at"],
+        # 2026-07-14 主人拍: 管理员备注 + 锁定
+        note_name=row["note_name"] if "note_name" in row.keys() else None,
+        is_locked=row["is_locked"] if "is_locked" in row.keys() else 0,
+        locked_reason=row["locked_reason"] if "locked_reason" in row.keys() else None,
     )
 
 
@@ -110,6 +118,20 @@ class UserRepository:
         row = conn.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
         return _row_to_user(row) if row else None
 
+
+    # 2026-07-14 主人拍: 管理员备注 + 锁定 (note_name / is_locked / locked_reason)
+    def update_meta(self, conn, user_id: str, *, note_name: Optional[str], is_locked: Optional[bool], locked_reason: Optional[str]) -> None:
+        """任一字段传 None 表示不更新, 传空串视为清空."""
+        sets=[]; params=[]
+        if note_name is not None:
+            sets.append("note_name=?"); params.append(note_name)
+        if is_locked is not None:
+            sets.append("is_locked=?"); params.append(1 if is_locked else 0)
+        if locked_reason is not None:
+            sets.append("locked_reason=?"); params.append(locked_reason)
+        if not sets: return
+        params.append(user_id)
+        conn.execute(f"UPDATE users SET {', '.join(sets)} WHERE id=?", tuple(params))
     def list_all(self, conn: sqlite3.Connection) -> list[UserRecord]:
         rows = conn.execute("SELECT * FROM users ORDER BY created_at DESC").fetchall()
         return [_row_to_user(r) for r in rows]

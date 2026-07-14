@@ -95,6 +95,10 @@ export const authApi = {
   setRole: (userId: string, newRole: 'admin' | 'user' | 'pending' | 'rejected') =>
     request<any>(`/admin/users/${userId}/role?new_role=${newRole}`, { method: 'PATCH' }),
 
+  // 2026-07-14 主人拍: admin 编辑用户备注 + 锁定
+  setUserMeta: (userId: string, body: { note_name?: string | null; is_locked?: boolean; locked_reason?: string | null }) =>
+    request<any>(`/admin/users/${userId}/meta`, { method: 'PATCH', body: JSON.stringify(body) }),
+
   deleteUser: (userId: string) =>
     request<void>(`/admin/users/${userId}`, { method: 'DELETE' }),
 

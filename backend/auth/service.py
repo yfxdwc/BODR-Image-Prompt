@@ -112,6 +112,17 @@ class AuthService:
                             metadata={"role": user.role})
                 conn.commit()
                 raise HTTPException(403, f"account {user.role}, please contact admin")
+            # 2026-07-14 主人拍: 锁定账户拒绝登录, 提示"重新申请"
+            if user.is_locked:
+                write_audit(conn, user_id=user.id, action="login_locked",
+                            metadata={"reason": user.locked_reason or ""})
+                conn.commit()
+                raise HTTPException(
+                    423,  # HTTP 423 Locked
+                    {"code": "account_locked",
+                     "reason": user.locked_reason or "账号已被管理员锁定",
+                     "message": "您的账号已被锁定，请联系管理员重新申请账号。"},
+                )
             # rehash 升级
             if needs_rehash(user.password_hash):
                 self.users.update_password_hash(conn, user.id, hash_password(password))

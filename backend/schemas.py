@@ -496,8 +496,20 @@ class UserPublic(BaseModel):
     created_at: str
     approved_at: Optional[str] = None
     last_login_at: Optional[str] = None
+    # 2026-07-14 主人拍: 管理员备注 + 锁定
+    note_name: Optional[str] = None
+    is_locked: bool = False
+    locked_reason: Optional[str] = None
 
 
+
+
+class UserMetaUpdate(BaseModel):
+    """2026-07-14 主人拍: admin 更新用户备注/锁定.
+    字段全部 Optional, 没传=不改; 传空串=清空; 传新值=覆盖."""
+    note_name: Optional[str] = None
+    is_locked: Optional[bool] = None
+    locked_reason: Optional[str] = None
 class UserCreateAdmin(BaseModel):
     """admin 直接创建用户 (不走申请流). 主人紧急开账号用."""
     email: str

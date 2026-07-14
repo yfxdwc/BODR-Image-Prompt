@@ -161,4 +161,8 @@ def me(request: Request):
         id=user.id, email=user.email, username=user.username, role=user.role,
         display_name=user.display_name, created_at=user.created_at,
         approved_at=user.approved_at, last_login_at=user.last_login_at,
+        # 2026-07-14 主人拍: 锁定信息透出
+        note_name=getattr(user, "note_name", None),
+        is_locked=bool(getattr(user, "is_locked", 0)),
+        locked_reason=getattr(user, "locked_reason", None),
     )

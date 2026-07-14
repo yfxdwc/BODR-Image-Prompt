@@ -17,7 +17,9 @@ MIGRATIONS = ["001_initial.sql", "002_image_roles.sql", "003_image_role_check.sq
     # 2026-07-12 主人拍: 搜索增强
     "024_product_search.sql",
     # 2026-07-13 主人拍: 类别/系列 name 全局唯一 COLLATE NOCASE + 清理历史重复
-    "025_category_series_unique.sql",]
+    "025_category_series_unique.sql",
+    # 2026-07-14 主人拍: 管理员备注 + 锁定 (note_name / is_locked / locked_reason)
+    "026_user_admin_meta.sql",]
 
 def get_db_path(library_path=None) -> Path:
     return resolve_library_path(library_path) / "db.sqlite"

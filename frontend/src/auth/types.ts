@@ -10,6 +10,10 @@ export interface AuthUser {
   created_at: string;
   approved_at: string | null;
   last_login_at: string | null;
+  // 2026-07-14 主人拍: 管理员备注 + 锁定
+  note_name?: string | null;
+  is_locked?: boolean;
+  locked_reason?: string | null;
 }
 
 export interface TokenPair {

@@ -1017,3 +1017,22 @@ mark.search-highlight{
 .quick-filter-pill.inline:disabled{opacity:.45;cursor:not-allowed}
 
 .quick-filter-dock.inline .quick-filter-menu{left:0;right:auto;min-width:160px;z-index:70}
+
+/* 2026-07-14 主人拍: 登录被锁定提示 */
+.auth-overlay-locked{padding:14px 16px;background:rgba(220,53,69,.08);border:1px solid rgba(220,53,69,.28);border-radius:14px;color:#7a1b14;display:flex;flex-direction:column;gap:8px;line-height:1.55;font-size:13.5px}
+.auth-overlay-locked-title{font-weight:900;font-size:15px;letter-spacing:-.01em}
+.auth-overlay-locked-msg{font-weight:700}
+.auth-overlay-locked-reason{font-size:13px;opacity:.85;font-style:italic}
+.auth-overlay-locked-hint{font-size:13px;opacity:.9}
+.auth-overlay-locked .auth-overlay-link{align-self:flex-start}
+
+/* 2026-07-14 主人拍: 用户中心"用户"Tab 行内编辑 + 锁定徽章 */
+.admin-row-title{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.admin-row.is-locked{background:rgba(220,53,69,.04);border-color:rgba(220,53,69,.20)}
+.locked-badge{background:rgba(220,53,69,.12);color:#a51d13;border:1px solid rgba(220,53,69,.30);border-radius:999px;padding:2px 8px;font-size:11.5px;font-weight:800;letter-spacing:.02em}
+.admin-note-tag{font-style:italic}
+.lock-reason{margin-top:4px;color:#a51d13;font-size:12.5px}
+.admin-row-edit{margin-top:10px;display:flex;flex-direction:column;gap:8px;padding:10px;background:rgba(33,25,34,.04);border:1px solid rgba(33,25,34,.10);border-radius:12px}
+.admin-edit-field{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:#211922}
+.admin-edit-field input{padding:7px 10px;border:1px solid rgba(33,25,34,.16);border-radius:8px;background:white;font-size:13px}
+.admin-edit-actions{display:flex;gap:8px}

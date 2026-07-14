@@ -170,23 +170,15 @@ export default function UserCenterPanel({ t }: Props) {
           {tab === 'users' && (
             <div className="admin-tab-body">
               {users.map(u => (
-                <div key={u.id} className="admin-row">
-                  <div className="admin-row-main">
-                    <strong>{u.username}</strong> <span className="muted">({u.email})</span>
-                    <div className="muted small">
-                      role: <code>{u.role}</code> · 创建 {u.created_at}
-                      {u.last_login_at && <> · 最近登录 {u.last_login_at}</>}
-                    </div>
-                  </div>
-                  <div className="admin-row-actions">
-                    {u.role !== 'admin' && (
-                      <button className="secondary small" onClick={() => handleSetRole(u.id, 'admin')}>提升 admin</button>
-                    )}
-                    {u.role === 'admin' && (
-                      <button className="secondary small" onClick={() => handleSetRole(u.id, 'user')}>降为 user</button>
-                    )}
-                  </div>
-                </div>
+                <UserAdminRow
+                  key={u.id}
+                  user={u}
+                  busy={busyId === u.id}
+                  onSetRole={handleSetRole}
+                  onUpdated={loadAll}
+                  setBusy={setBusyId}
+                  setError={setError}
+                />
               ))}
             </div>
           )}
@@ -220,5 +212,99 @@ export default function UserCenterPanel({ t }: Props) {
         </div>
       )}
     </aside>
+  );
+}
+
+// 2026-07-14 主人拍: 用户管理单行组件. 备注名 + 锁定开关 + 锁定原因.
+function UserAdminRow({ user, busy, onSetRole, onUpdated, setBusy, setError }: {
+  user: any;
+  busy: boolean;
+  onSetRole: (uid: string, role: 'admin' | 'user') => void;
+  onUpdated: () => void | Promise<void>;
+  setBusy: (id: string | null) => void;
+  setError: (msg: string | null) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [noteName, setNoteName] = useState(user.note_name || '');
+  const [lockedReason, setLockedReason] = useState(user.locked_reason || '');
+  const isLocked = !!user.is_locked;
+  useEffect(() => {
+    setNoteName(user.note_name || '');
+    setLockedReason(user.locked_reason || '');
+  }, [user.id, user.note_name, user.locked_reason]);
+  const saveMeta = async (patch: { note_name?: string; is_locked?: boolean; locked_reason?: string }) => {
+    setBusy(user.id); setError(null);
+    try {
+      await authApi.setUserMeta(user.id, patch);
+      await onUpdated();
+      setEditing(false);
+    } catch (e: any) {
+      setError(e?.message || '保存失败');
+    } finally { setBusy(null); }
+  };
+  const handleSaveNote = () => saveMeta({ note_name: noteName });
+  const handleToggleLock = () => {
+    if (!isLocked) {
+      // 上锁需要理由
+      const reason = prompt('锁定原因 (会显示给被锁用户，请认真填写):');
+      if (!reason || reason.trim().length < 1) return;
+      setLockedReason(reason.trim());
+      saveMeta({ is_locked: true, locked_reason: reason.trim() });
+    } else {
+      if (!confirm('确认解除该用户锁定？')) return;
+      saveMeta({ is_locked: false });
+    }
+  };
+  return (
+    <div className={`admin-row${isLocked ? ' is-locked' : ''}`}>
+      <div className="admin-row-main">
+        <div className="admin-row-title">
+          <strong>{user.username}</strong>{' '}
+          <span className="muted">({user.email})</span>
+          {isLocked && <span className="locked-badge" title={user.locked_reason || '账号已锁定'}>🔒 已锁定</span>}
+          {user.note_name && <span className="muted small admin-note-tag">· 备注: {user.note_name}</span>}
+        </div>
+        <div className="muted small">
+          role: <code>{user.role}</code> · 创建 {user.created_at}
+          {user.last_login_at && <> · 最近登录 {user.last_login_at}</>}
+          {isLocked && user.locked_reason && <div className="lock-reason">原因: {user.locked_reason}</div>}
+        </div>
+        {editing && (
+          <div className="admin-row-edit">
+            <label className="admin-edit-field">
+              <span>备注名</span>
+              <input
+                type="text"
+                value={noteName}
+                onChange={e => setNoteName(e.target.value)}
+                placeholder="仅方便管理员识别成员"
+                maxLength={64}
+              />
+            </label>
+            <div className="admin-edit-actions">
+              <button className="primary small" disabled={busy} onClick={handleSaveNote}>保存备注</button>
+              <button className="secondary small" disabled={busy} onClick={() => { setEditing(false); setNoteName(user.note_name || ''); }}>取消</button>
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="admin-row-actions">
+        {!editing && <button className="secondary small" disabled={busy} onClick={() => setEditing(true)}>编辑备注</button>}
+        {user.role !== 'admin' && (
+          <button className="secondary small" disabled={busy} onClick={() => onSetRole(user.id, 'admin')}>提升 admin</button>
+        )}
+        {user.role === 'admin' && (
+          <button className="secondary small" disabled={busy} onClick={() => onSetRole(user.id, 'user')}>降为 user</button>
+        )}
+        <button
+          className={`small ${isLocked ? 'primary' : 'secondary'}`}
+          disabled={busy}
+          onClick={handleToggleLock}
+          title={isLocked ? '解除锁定' : '锁定后该用户无法登录，需重新申请'}
+        >
+          {isLocked ? '解锁' : '锁定'}
+        </button>
+      </div>
+    </div>
   );
 }
