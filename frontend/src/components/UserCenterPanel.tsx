@@ -1,3 +1,10 @@
+
+function formatTime(iso?: string | null): string {
+  if (!iso) return '-';
+  // 后端给的是带 T 的 ISO; 截前 16 字符
+  const s = iso.replace('T', ' ').replace('Z', '');
+  return s.length >= 16 ? s.slice(0, 16) : s;
+}
 // 2026-07-12 主人拍: 用户中心弹窗. 顶栏用户头像点击弹出.
 // 内容:
 //   - 顶部 UserPanel (头像/名字/邮箱/角色徽章/登出/去设置)
@@ -133,13 +140,13 @@ export default function UserCenterPanel({ t }: Props) {
         <>
           <div className="config-tabs" role="tablist">
             <button role="tab" className={tab === 'requests' ? 'active' : ''} onClick={() => setTab('requests')}>
-              审批 ({requests.filter(r => r.status === 'pending').length})
+              审批<span className="admin-tab-count">{requests.filter(r => r.status === 'pending').length}</span>
             </button>
             <button role="tab" className={tab === 'users' ? 'active' : ''} onClick={() => setTab('users')}>
-              用户 ({users.length})
+              用户<span className="admin-tab-count">{users.length}</span>
             </button>
             <button role="tab" className={tab === 'audit' ? 'active' : ''} onClick={() => setTab('audit')}>
-              Audit ({audit.length})
+              Audit<span className="admin-tab-count">{audit.length}</span>
             </button>
           </div>
 
@@ -147,22 +154,37 @@ export default function UserCenterPanel({ t }: Props) {
 
           {tab === 'requests' && (
             <div className="admin-tab-body">
-              {requests.length === 0 ? <p className="muted">暂无申请记录</p> :
-                requests.map(r => (
-                  <div key={r.id} className="admin-row">
+              {requests.length === 0 ? <p className="muted admin-tab-empty">暂无申请记录</p> :
+                requests.map(r => {
+                  const initial = (r.user_username || '?').slice(0, 1).toUpperCase();
+                  return (
+                  <div key={r.id} className="admin-row request-card">
+                    <div className={`admin-row-avatar role-${r.status}`}>
+                      {initial}
+                      {r.status === 'pending' && <span className="status-dot is-pending" />}
+                      {r.status === 'rejected' && <span className="status-dot is-locked" />}
+                      {r.status === 'approved' && <span className="status-dot" />}
+                    </div>
                     <div className="admin-row-main">
-                      <strong>{r.user_username}</strong> <span className="muted">({r.user_email})</span>
-                      <div className="muted small">{r.requested_at} · status: {r.status}</div>
-                      {r.reason && <div className="admin-row-reason">{r.reason}</div>}
+                      <div className="admin-row-title">
+                        <span className="admin-row-username">{r.user_username}</span>
+                        <span className="admin-row-email">· {r.user_email}</span>
+                        <span className={`admin-chip role-${r.status}`}>{r.status}</span>
+                      </div>
+                      <div className="admin-row-meta">
+                        <span className="meta-item">🕐 申请于 {formatTime(r.requested_at)}</span>
+                      </div>
+                      {r.reason && <div className="admin-row-reason">“{r.reason}”</div>}
                     </div>
                     {r.status === 'pending' && (
                       <div className="admin-row-actions">
                         <button className="primary small" disabled={busyId === r.id} onClick={() => handleApprove(r.id)}>批准</button>
-                        <button className="secondary small" disabled={busyId === r.id} onClick={() => handleReject(r.id)}>拒绝</button>
+                        <button className="danger small" disabled={busyId === r.id} onClick={() => handleReject(r.id)}>拒绝</button>
                       </div>
                     )}
                   </div>
-                ))
+                  );
+                })
               }
             </div>
           )}
@@ -255,20 +277,30 @@ function UserAdminRow({ user, busy, onSetRole, onUpdated, setBusy, setError }: {
       saveMeta({ is_locked: false });
     }
   };
+  const initial = (user.username || '?').slice(0, 1).toUpperCase();
   return (
     <div className={`admin-row${isLocked ? ' is-locked' : ''}`}>
+      <div className={`admin-row-avatar role-${user.role}`}>
+        {initial}
+        {isLocked
+          ? <span className="status-dot is-locked" />
+          : user.role === 'admin'
+            ? <span className="status-dot" />
+            : <span className="status-dot" />}
+      </div>
       <div className="admin-row-main">
         <div className="admin-row-title">
-          <strong>{user.username}</strong>{' '}
-          <span className="muted">({user.email})</span>
-          {isLocked && <span className="locked-badge" title={user.locked_reason || '账号已锁定'}>🔒 已锁定</span>}
-          {user.note_name && <span className="muted small admin-note-tag">· 备注: {user.note_name}</span>}
+          <span className="admin-row-username">{user.username}</span>
+          <span className="admin-row-email">· {user.email}</span>
+          <span className={`admin-chip role-${user.role}`}>{user.role}</span>
+          {isLocked && <span className="admin-chip is-locked" title={user.locked_reason || '账号已锁定'}>🔒 已锁定</span>}
+          {user.note_name && <span className="admin-chip note-chip" title={user.note_name}>📝 {user.note_name}</span>}
         </div>
-        <div className="muted small">
-          role: <code>{user.role}</code> · 创建 {user.created_at}
-          {user.last_login_at && <> · 最近登录 {user.last_login_at}</>}
-          {isLocked && user.locked_reason && <div className="lock-reason">原因: {user.locked_reason}</div>}
+        <div className="admin-row-meta">
+          <span className="meta-item">🗓 创建 {formatTime(user.created_at)}</span>
+          {user.last_login_at && <span className="meta-item">🔑 最近登录 {formatTime(user.last_login_at)}</span>}
         </div>
+        {isLocked && user.locked_reason && <div className="lock-reason">🔒 锁定原因: {user.locked_reason}</div>}
         {editing && (
           <div className="admin-row-edit">
             <label className="admin-edit-field">
@@ -297,7 +329,7 @@ function UserAdminRow({ user, busy, onSetRole, onUpdated, setBusy, setError }: {
           <button className="secondary small" disabled={busy} onClick={() => onSetRole(user.id, 'user')}>降为 user</button>
         )}
         <button
-          className={`small ${isLocked ? 'primary' : 'secondary'}`}
+          className={`small ${isLocked ? 'ghost' : 'danger'}`}
           disabled={busy}
           onClick={handleToggleLock}
           title={isLocked ? '解除锁定' : '锁定后该用户无法登录，需重新申请'}

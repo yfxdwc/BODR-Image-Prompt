@@ -802,15 +802,95 @@ textarea.product-info-input{min-height:60px}
 .config-tabs button.active{background:linear-gradient(135deg,#6d5dfc,#9b6dff);color:#fff;box-shadow:0 6px 16px rgba(109,93,252,.28)}
 .config-tabs button:hover:not(.active){background:rgba(122,108,145,.10)}
 .admin-tab-body{padding:14px;display:flex;flex-direction:column;gap:10px;overflow:auto;max-height:calc(100vh - 240px)}
-.admin-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid rgba(122,108,145,.16);border-radius:14px;background:#fff}
-.admin-row-main{flex:1;min-width:0}
-.admin-row-main strong{font-size:14px;color:#1f1726}
-.admin-row-main .small{font-size:11.5px;margin-top:3px}
+/* 2026-07-14 主人拍: 卡片化重排. 左侧头像 + 状态点, 中间信息分层, 右侧动作按钮. */
+.admin-row{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid rgba(122,108,115,.18);border-radius:18px;background:linear-gradient(180deg,#ffffff 0%,#fbf9f6 100%);box-shadow:0 4px 16px rgba(33,25,34,.04);transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease}
+.admin-row:hover{border-color:rgba(109,93,252,.36);box-shadow:0 8px 22px rgba(33,25,34,.07);transform:translateY(-1px)}
+.admin-row-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.admin-row-main strong{font-size:14.5px;color:#1f1726;letter-spacing:-.01em}
+.admin-row-main .small{font-size:11.5px;margin-top:0}
 .admin-row-reason{margin-top:6px;padding:7px 9px;background:rgba(122,108,145,.08);border-radius:8px;font-size:12.5px;color:#3d334a;white-space:pre-wrap}
-.admin-row-actions{display:flex;gap:6px;flex-shrink:0}
-.admin-row-actions button.small{padding:6px 11px;border-radius:10px;border:0;font-size:12px;font-weight:850;cursor:pointer}
-.admin-row-actions button.primary{background:linear-gradient(135deg,#6d5dfc,#9b6dff);color:#fff}
+.admin-row-actions{display:flex;gap:6px;flex-shrink:0;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.admin-row-actions button.small{padding:7px 12px;border-radius:11px;border:0;font-size:12px;font-weight:850;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease,background .12s ease}
+.admin-row-actions button.primary{background:linear-gradient(135deg,#6d5dfc,#9b6dff);color:#fff;box-shadow:0 6px 16px rgba(109,93,252,.24)}
+.admin-row-actions button.primary:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(109,93,252,.30)}
 .admin-row-actions button.secondary{background:#f0eadf;color:#372b3a}
+.admin-row-actions button.secondary:hover{background:#e6dcc7}
+.admin-row-actions button.danger{background:rgba(220,53,69,.10);color:#a51d13;border:1px solid rgba(220,53,69,.20)}
+.admin-row-actions button.danger:hover{background:rgba(220,53,69,.18)}
+.admin-row-actions button.ghost{background:transparent;color:#62594f;border:1px solid rgba(122,108,115,.20)}
+.admin-row-actions button.ghost:hover{background:rgba(122,108,115,.08)}
+
+/* 头像 */
+.admin-row-avatar{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,#6d5dfc,#9b6dff);color:#fff;font-weight:900;font-size:16px;letter-spacing:-.01em;flex-shrink:0;box-shadow:0 6px 16px rgba(109,93,252,.22);position:relative}
+.admin-row-avatar.role-admin{background:linear-gradient(135deg,#f59e0b,#f43f5e)}
+.admin-row-avatar.role-user{background:linear-gradient(135deg,#3b82f6,#6366f1)}
+.admin-row-avatar.role-pending{background:linear-gradient(135deg,#94a3b8,#64748b)}
+.admin-row-avatar.role-rejected{background:linear-gradient(135deg,#475569,#1f1726)}
+.admin-row-avatar .status-dot{position:absolute;right:-2px;bottom:-2px;width:12px;height:12px;border-radius:999px;border:2px solid #fff;background:#22c55e;box-shadow:0 0 0 1px rgba(0,0,0,.04)}
+.admin-row-avatar .status-dot.is-locked{background:#dc3545}
+.admin-row-avatar .status-dot.is-pending{background:#f59e0b}
+
+/* 标题行 */
+.admin-row-title{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.admin-row-username{font-size:15px;font-weight:900;color:#1f1726;letter-spacing:-.01em}
+.admin-row-email{font-size:12.5px;color:#6c5e74}
+
+/* 角色 / 状态 chip */
+.admin-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:850;letter-spacing:.02em;line-height:1.4;white-space:nowrap}
+.admin-chip.role-admin{background:rgba(245,158,11,.14);color:#a85a05;border:1px solid rgba(245,158,11,.30)}
+.admin-chip.role-user{background:rgba(59,130,246,.12);color:#1d4ed8;border:1px solid rgba(59,130,246,.26)}
+.admin-chip.role-pending{background:rgba(148,163,184,.18);color:#475569;border:1px solid rgba(148,163,184,.36)}
+.admin-chip.role-rejected{background:rgba(220,53,69,.12);color:#a51d13;border:1px solid rgba(220,53,69,.26)}
+.admin-chip.is-locked{background:rgba(220,53,69,.14);color:#a51d13;border:1px solid rgba(220,53,69,.32)}
+.admin-chip.note-chip{background:rgba(33,25,34,.06);color:#3d334a;border:1px solid rgba(33,25,34,.10);max-width:240px;overflow:hidden;text-overflow:ellipsis}
+
+/* 信息行 */
+.admin-row-meta{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:#6c5e74}
+.admin-row-meta .meta-item{display:inline-flex;align-items:center;gap:5px}
+.admin-row-meta code{background:rgba(122,108,115,.10);padding:1px 6px;border-radius:5px;font-size:11.5px;color:#3d334a}
+.lock-reason{margin-top:4px;padding:6px 10px;background:rgba(220,53,69,.08);border:1px solid rgba(220,53,69,.20);border-radius:10px;color:#a51d13;font-size:12.5px;line-height:1.5}
+
+/* 行内编辑 */
+.admin-row-edit{margin-top:8px;display:flex;flex-direction:column;gap:8px;padding:12px;background:rgba(33,25,34,.04);border:1px dashed rgba(33,25,34,.16);border-radius:12px}
+.admin-edit-field{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:#1f1726;font-weight:700}
+.admin-edit-field input{padding:8px 11px;border:1px solid rgba(33,25,34,.16);border-radius:9px;background:white;font-size:13px;font-weight:400;color:#1f1726}
+.admin-edit-field input:focus{outline:2px solid rgba(109,93,252,.36);outline-offset:1px;border-color:transparent}
+.admin-edit-actions{display:flex;gap:8px;justify-content:flex-end}
+
+/* 审批请求卡片 */
+.admin-row.request-card{background:linear-gradient(180deg,#fff 0%,#fdf7ec 100%);border-color:rgba(245,158,11,.20)}
+.admin-row.request-card:hover{border-color:rgba(245,158,11,.40)}
+
+/* audit 表美化 */
+.audit-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.audit-table th{text-align:left;padding:8px 10px;background:rgba(33,25,34,.04);font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:#62594f}
+.audit-table td{padding:9px 10px;border-top:1px solid rgba(122,108,115,.12)}
+.audit-table tr:hover td{background:rgba(109,93,252,.04)}
+.audit-table code{background:rgba(122,108,115,.10);padding:1px 6px;border-radius:5px;font-size:11.5px;color:#3d334a}
+
+/* tab 计数 chip */
+.admin-tab-count{display:inline-block;margin-left:5px;padding:0 7px;min-width:18px;height:18px;line-height:18px;border-radius:999px;background:rgba(255,255,255,.30);font-size:11px;font-weight:900}
+.config-tabs button.active .admin-tab-count{background:rgba(255,255,255,.30);color:#fff}
+
+/* 用户面板头部 */
+.config-user-panel{padding:18px 16px;background:linear-gradient(180deg,#ffffff 0%,#fbf9f6 100%)}
+.config-user-head{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid rgba(122,108,115,.18);border-radius:18px;background:linear-gradient(135deg,rgba(109,93,252,.06) 0%,rgba(245,158,11,.06) 100%);margin-bottom:14px}
+.config-user-avatar{width:54px;height:54px;border-radius:18px;display:grid;place-items:center;background:linear-gradient(135deg,#6d5dfc,#9b6dff);color:#fff;font-weight:900;font-size:20px;letter-spacing:-.01em;flex-shrink:0;box-shadow:0 8px 20px rgba(109,93,252,.24)}
+.config-user-avatar.role-admin{background:linear-gradient(135deg,#f59e0b,#f43f5e);box-shadow:0 8px 20px rgba(245,158,11,.26)}
+.config-user-avatar.role-user{background:linear-gradient(135deg,#3b82f6,#6366f1)}
+.config-user-id{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
+.config-user-name{font-size:16px;font-weight:900;color:#1f1726;letter-spacing:-.01em}
+.config-user-email{font-size:12.5px;color:#6c5e74}
+.user-menu-role-badge{display:inline-block;width:fit-content;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:850;letter-spacing:.04em}
+.user-menu-role-badge.role-admin{background:rgba(245,158,11,.14);color:#a85a05;border:1px solid rgba(245,158,11,.30)}
+.user-menu-role-badge.role-user{background:rgba(59,130,246,.12);color:#1d4ed8;border:1px solid rgba(59,130,246,.26)}
+.user-menu-role-badge.role-pending{background:rgba(148,163,184,.18);color:#475569}
+.config-user-actions{display:flex;gap:8px;flex-wrap:wrap}
+.config-user-action-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid rgba(122,108,115,.20);border-radius:11px;background:#fff;color:#372b3a;font-size:12.5px;font-weight:800;cursor:pointer;transition:background .12s ease,border-color .12s ease}
+.config-user-action-btn:hover{background:#fbf9f6;border-color:rgba(122,108,115,.36)}
+.config-user-action-logout{color:#a51d13;border-color:rgba(220,53,69,.20);background:rgba(220,53,69,.04)}
+.config-user-action-logout:hover{background:rgba(220,53,69,.10);border-color:rgba(220,53,69,.36)}
+
 .audit-table{width:100%;border-collapse:collapse;font-size:12px}
 .audit-table th,.audit-table td{padding:6px 8px;text-align:left;border-bottom:1px solid rgba(122,108,145,.10)}
 .audit-table th{font-weight:900;color:#7a6c91;font-size:11px;letter-spacing:.05em;text-transform:uppercase}
