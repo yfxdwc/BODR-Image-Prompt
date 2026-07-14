@@ -165,17 +165,17 @@ export default function UserCenterPanel({ t }: Props) {
                       {r.status === 'rejected' && <span className="status-dot is-locked" />}
                       {r.status === 'approved' && <span className="status-dot" />}
                     </div>
-                    <div className="admin-row-main">
-                      <div className="admin-row-title">
-                        <span className="admin-row-username">{r.user_username}</span>
-                        <span className="admin-row-email">· {r.user_email}</span>
+                    <div className="admin-row-head">
+                      <div className="admin-row-name">{r.user_username}</div>
+                      <div className="admin-row-chips">
                         <span className={`admin-chip role-${r.status}`}>{r.status}</span>
                       </div>
-                      <div className="admin-row-meta">
-                        <span className="meta-item">🕐 申请于 {formatTime(r.requested_at)}</span>
-                      </div>
-                      {r.reason && <div className="admin-row-reason">“{r.reason}”</div>}
                     </div>
+                    <div className="admin-row-email" title={r.user_email}>{r.user_email}</div>
+                    <div className="admin-row-meta">
+                      <span className="meta-item">🕐 申请于 {formatTime(r.requested_at)}</span>
+                    </div>
+                    {r.reason && <div className="admin-row-reason">“{r.reason}”</div>}
                     {r.status === 'pending' && (
                       <div className="admin-row-actions">
                         <button className="primary small" disabled={busyId === r.id} onClick={() => handleApprove(r.id)}>批准</button>
@@ -284,42 +284,40 @@ function UserAdminRow({ user, busy, onSetRole, onUpdated, setBusy, setError }: {
         {initial}
         {isLocked
           ? <span className="status-dot is-locked" />
-          : user.role === 'admin'
-            ? <span className="status-dot" />
-            : <span className="status-dot" />}
+          : <span className="status-dot" />}
       </div>
-      <div className="admin-row-main">
-        <div className="admin-row-title">
-          <span className="admin-row-username">{user.username}</span>
-          <span className="admin-row-email">· {user.email}</span>
+      <div className="admin-row-head">
+        <div className="admin-row-name">{user.username}</div>
+        <div className="admin-row-chips">
           <span className={`admin-chip role-${user.role}`}>{user.role}</span>
           {isLocked && <span className="admin-chip is-locked" title={user.locked_reason || '账号已锁定'}>🔒 已锁定</span>}
           {user.note_name && <span className="admin-chip note-chip" title={user.note_name}>📝 {user.note_name}</span>}
         </div>
-        <div className="admin-row-meta">
-          <span className="meta-item">🗓 创建 {formatTime(user.created_at)}</span>
-          {user.last_login_at && <span className="meta-item">🔑 最近登录 {formatTime(user.last_login_at)}</span>}
-        </div>
-        {isLocked && user.locked_reason && <div className="lock-reason">🔒 锁定原因: {user.locked_reason}</div>}
-        {editing && (
-          <div className="admin-row-edit">
-            <label className="admin-edit-field">
-              <span>备注名</span>
-              <input
-                type="text"
-                value={noteName}
-                onChange={e => setNoteName(e.target.value)}
-                placeholder="仅方便管理员识别成员"
-                maxLength={64}
-              />
-            </label>
-            <div className="admin-edit-actions">
-              <button className="primary small" disabled={busy} onClick={handleSaveNote}>保存备注</button>
-              <button className="secondary small" disabled={busy} onClick={() => { setEditing(false); setNoteName(user.note_name || ''); }}>取消</button>
-            </div>
-          </div>
-        )}
       </div>
+      <div className="admin-row-email" title={user.email}>{user.email}</div>
+      <div className="admin-row-meta">
+        <span className="meta-item">🗓 创建 {formatTime(user.created_at)}</span>
+        {user.last_login_at && <span className="meta-item">🔑 最近登录 {formatTime(user.last_login_at)}</span>}
+      </div>
+      {isLocked && user.locked_reason && <div className="lock-reason">🔒 锁定原因: {user.locked_reason}</div>}
+      {editing && (
+        <div className="admin-row-edit">
+          <label className="admin-edit-field">
+            <span>备注名</span>
+            <input
+              type="text"
+              value={noteName}
+              onChange={e => setNoteName(e.target.value)}
+              placeholder="仅方便管理员识别成员"
+              maxLength={64}
+            />
+          </label>
+          <div className="admin-edit-actions">
+            <button className="primary small" disabled={busy} onClick={handleSaveNote}>保存备注</button>
+            <button className="secondary small" disabled={busy} onClick={() => { setEditing(false); setNoteName(user.note_name || ''); }}>取消</button>
+          </div>
+        </div>
+      )}
       <div className="admin-row-actions">
         {!editing && <button className="secondary small" disabled={busy} onClick={() => setEditing(true)}>编辑备注</button>}
         {user.role !== 'admin' && (
