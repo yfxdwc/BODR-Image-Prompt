@@ -687,43 +687,68 @@ class ProductRepository:
             where.append("p.series_id = ?")
             params.append(series_id)
         if q:
-            tokens = re.findall(r"[\w\u4e00-\u9fff]+", q)
             like = f"%{q}%"
-            if tokens:
-                match = " ".join(t + "*" for t in tokens)
-                # FTS5 优先 + LIKE 兜底.
-                # 2026-07-13 主人拍 bug fix: 之前 'SELECT rowid' 是 FTS5 内部 rowid, 跟 products.id 不同.
-                # FTS5 rowid 是 SQLite B-tree 自增 (复用被删的 rowid 槽), product_id 才是真外键.
-                # 错把 rowid 当 product_id 会让搜索结果混入无关产品 (例: 搜 '旭日' 出现 志邦8802).
-                where.append(
-                    "p.id IN (SELECT product_id FROM product_search WHERE product_search MATCH ? "
-                    "UNION SELECT p2.id FROM products p2 WHERE "
-                    "(p2.name LIKE ? OR p2.series LIKE ? OR p2.category LIKE ? "
-                    "OR p2.spec LIKE ? OR p2.selling_points LIKE ? "
-                    "OR p2.after_sales LIKE ? OR p2.certifications LIKE ?))"
-                )
-                params += [match, like, like, like, like, like, like, like]
-            else:
-                where.append(
-                    "p.id IN (SELECT p2.id FROM products p2 WHERE "
-                    "(p2.name LIKE ? OR p2.series LIKE ? OR p2.category LIKE ? "
-                    "OR p2.spec LIKE ? OR p2.selling_points LIKE ? "
-                    "OR p2.after_sales LIKE ? OR p2.certifications LIKE ?))"
-                )
-                params += [like, like, like, like, like, like, like]
+            # 2026-07-14 主人拍: 搜索时按"型号 > 规格"优先级排序. 简化用 LIKE 即可
+            # (FTS5 偶发 syntax error, 281 条产品 LIKE 性能无压力).
+            where.append(
+                "p.id IN (SELECT p2.id FROM products p2 WHERE "
+                "(p2.name LIKE ? OR p2.series LIKE ? OR p2.category LIKE ? "
+                "OR p2.spec LIKE ? OR p2.selling_points LIKE ? "
+                "OR p2.after_sales LIKE ? OR p2.certifications LIKE ?))"
+            )
+            params += [like, like, like, like, like, like, like]
         where_sql = ("WHERE " + " AND ".join(where)) if where else ""
         with connect(self.library_path) as conn:
-            # 2026-07-10 13:51 主人拍: grid 网格页"最近上传了图片的卡片排最前"
-            # ORDER BY: 最近 product_images.created_at 倒序, 无图 product 排最后
-            rows = conn.execute(
-                f"SELECT id, source_id, name, series, category, spec, selling_points, "
-                f"after_sales, certifications, "
-                f"created_at, updated_at, cover_image_id "
-                f"FROM products p {where_sql} "
-                f"ORDER BY (SELECT MAX(pi.created_at) FROM product_images pi WHERE pi.product_id=p.id) DESC, "
-                f"id DESC",
-                tuple(params),
-            ).fetchall()
+            if q:
+                # 2026-07-14 主人拍: 搜索结果优先级. 优先按"匹配度"排序, 再按最近图片/ID.
+                # 评分: name LIKE 4 > series 2 > spec 1 > 其它字段 0.
+                # 多个 token 全部 LIKE 命中再加一个奖励分 (防止部分 token 命中后靠前).
+                tokens = re.findall(r"[\w\u4e00-\u9fff]+", q)
+                match_clauses=[]
+                score_params=[]
+                for needle in tokens:
+                    n=f"%{needle}%"
+                    match_clauses.append(
+                        "(CASE WHEN p.name LIKE ? THEN 4 ELSE 0 END"
+                        "+CASE WHEN p.series LIKE ? THEN 2 ELSE 0 END"
+                        "+CASE WHEN p.spec LIKE ? THEN 1 ELSE 0 END"
+                        "+CASE WHEN p.category LIKE ? THEN 1 ELSE 0 END"
+                        "+CASE WHEN p.selling_points LIKE ? THEN 1 ELSE 0 END"
+                        "+CASE WHEN p.after_sales LIKE ? THEN 1 ELSE 0 END"
+                        "+CASE WHEN p.certifications LIKE ? THEN 1 ELSE 0 END)"
+                    )
+                    score_params += [n,n,n,n,n,n,n]
+                # 全部 token 命中加分
+                all_match=[]
+                for needle in tokens:
+                    n=f"%{needle}%"
+                    all_match.append("(CASE WHEN p.name LIKE ? OR p.series LIKE ? OR p.spec LIKE ? OR p.category LIKE ? OR p.selling_points LIKE ? OR p.after_sales LIKE ? OR p.certifications LIKE ? THEN 1 ELSE 0 END)")
+                    score_params += [n,n,n,n,n,n,n]
+                bonus = " + ".join(all_match)
+                score_expr = " + ".join(match_clauses) + (" + " + bonus if bonus else "")
+                rows = conn.execute(
+                    f"SELECT id, source_id, name, series, category, spec, selling_points, "
+                    f"after_sales, certifications, "
+                    f"created_at, updated_at, cover_image_id, "
+                    f"({score_expr}) AS score "
+                    f"FROM products p {where_sql} "
+                    f"ORDER BY score DESC, "
+                    f"(SELECT MAX(pi.created_at) FROM product_images pi WHERE pi.product_id=p.id) DESC, "
+                    f"id DESC",
+                    tuple(params + score_params),
+                ).fetchall()
+            else:
+                # 2026-07-10 13:51 主人拍: grid 网格页"最近上传了图片的卡片排最前"
+                # ORDER BY: 最近 product_images.created_at 倒序, 无图 product 排最后
+                rows = conn.execute(
+                    f"SELECT id, source_id, name, series, category, spec, selling_points, "
+                    f"after_sales, certifications, "
+                    f"created_at, updated_at, cover_image_id "
+                    f"FROM products p {where_sql} "
+                    f"ORDER BY (SELECT MAX(pi.created_at) FROM product_images pi WHERE pi.product_id=p.id) DESC, "
+                    f"id DESC",
+                    tuple(params),
+                ).fetchall()
         return ProductDetailList(items=[self._row_to_product(r, with_images=True) for r in rows], total=len(rows))
 
     def rebuild_product_search(self, conn, product_id: int):

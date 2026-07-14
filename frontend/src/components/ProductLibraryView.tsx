@@ -1438,6 +1438,9 @@ export default function ProductLibraryView({
   onNewProductLoadError,            // 2026-07-12 主人拍: 加载新产品失败时通知顶层弹 toast
   authStatus,                        // 2026-07-12 主人拍: 守护 list 请求, 避免 401 闪烁
   isAdmin = true,                    // 2026-07-13 主人拍: 守护 admin-only 操作, 默认 true 保持单测/旧调用方兼容
+  onClearSearch,                     // 2026-07-14 主人拍: 无匹配时点"清除筛选"按钮
+  onClearCategoryFilter,             // 2026-07-14 主人拍: 清除品类/系列筛选
+  onClearSeriesFilter,
 }: {
   t: Translator;
   q?: string;
@@ -1451,6 +1454,9 @@ export default function ProductLibraryView({
   globalThumbnailBudget: number;
   onProductsCountChange?: (count: number) => void;
   onNewProductLoadError?: (message: string) => void;
+  onClearSearch?: () => void;
+  onClearCategoryFilter?: () => void;
+  onClearSeriesFilter?: () => void;
   // 2026-07-12 主人拍: 'loading' | 'anonymous' | 'authenticated'. 用于守护 list 请求, 避免 401 闪烁.
   authStatus?: 'loading' | 'anonymous' | 'authenticated';
   // 2026-07-13 主人拍: 普通用户 (role='user') 不显示编辑/删除/上传/AI 反推/创建字典 等 admin-only 操作.
@@ -1470,6 +1476,8 @@ export default function ProductLibraryView({
   // 2026-07-10: onLibraryView 是导航栏接的 setter, 预留接口. 当前组件内部不调用 (页面内不再有切换按钮).
   void onLibraryView;
 
+  // 2026-07-14 主人拍: 区分无匹配 vs 空库
+  const hasActiveFilter = Boolean((q && q.trim()) || categoryId || seriesId);
   // 2026-07-12 主人拍: 仅在 authenticated 时拉产品. App.tsx 已守护条件渲染,
   // 这里再守一次, 防止 StrictMode / 上层误传导致初次挂载就触发 401.
   useEffect(() => {
@@ -1529,19 +1537,65 @@ export default function ProductLibraryView({
     return () => { cancelled = true; };
   }, [newProductId]);
 
+  // 2026-07-14 主人拍: 加载失败时给一个温和的友好提示 + 重试按钮, 不再裸贴 error 文本.
   if (loading) {
     return <div className="loading" role="status">{t('loading')}</div>;
   }
+  const loadRetry = () => {
+    // 重新触发 useEffect: 改 q/categoryId/seriesId 之一即可. 这里直接 reloadProducts 用的
+    // state 没暴露, 用一个微小的依赖抖动: 触发同 useEffect 的副作用 (让 parent 重置一次).
+    setError(null);
+    setLoading(true);
+    api.products
+      .list({ q, category_id: categoryId, series_id: seriesId } as never)
+      .then(response => {
+        const items = (response as { items: ProductDetail[] }).items;
+        setProducts(items);
+        onProductsCountChange?.(items.length);
+      })
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : String(err));
+        setProducts([]);
+        onProductsCountChange?.(0);
+      })
+      .finally(() => setLoading(false));
+  };
   if (error) {
-    return <div className="error" role="alert">{error}</div>;
+    return (
+      <div className="empty" role="alert">
+        <h2>{t('productLibraryLoadFailed')}</h2>
+        <div className="empty-actions">
+          <button type="button" className="empty-primary" onClick={loadRetry}>
+            {t('productLibraryRetry')}
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
     <>
-      {products.length === 0 ? (
+      {products.length === 0 && !loading ? (
+        // 2026-07-14 主人拍: 区分"无匹配结果"和"产品库为空". 加载失败另外处理 (见上 .error).
+        // 无搜索/筛选条件时显示空库提示; 有条件时显示"无匹配"并提供清除按钮.
         <div className="empty">
-          <h2>{t('productLibraryEmpty')}</h2>
-          <p>{t('productLibraryEmptyHelp')}</p>
+          <h2>{hasActiveFilter ? t('productLibraryNoResults') : t('productLibraryEmpty')}</h2>
+          <p>{hasActiveFilter ? t('productLibraryNoResultsHelp') : t('productLibraryEmptyHelp')}</p>
+          {hasActiveFilter ? (
+            <div className="empty-actions">
+              <button
+                type="button"
+                className="empty-primary"
+                onClick={() => {
+                  onClearSearch?.();
+                  onClearCategoryFilter?.();
+                  onClearSeriesFilter?.();
+                }}
+              >
+                {t('productLibraryClearFilters')}
+              </button>
+            </div>
+          ) : null}
         </div>
       ) : null}
       {libraryView === 'grid' ? (

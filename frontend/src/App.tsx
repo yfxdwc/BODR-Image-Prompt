@@ -319,6 +319,10 @@ function AppInner() {
           onNewProductLoadError={(msg) => setToast({ title: `加载失败: ${msg}`, tone: 'error' })}
           authStatus={authStatus}
           isAdmin={isAdmin}
+          // 2026-07-14 主人拍: 无匹配时点"清除筛选"按钮, 一次清掉搜索/品类/系列
+          onClearSearch={() => setQ('')}
+          onClearCategoryFilter={() => setCategoryFilterId(undefined)}
+          onClearSeriesFilter={() => setSeriesFilterId(undefined)}
         />
       ) : (
         // 2026-07-12 主人拍: 避免 'loading' / 'anonymous' 时 ProductLibraryView 挂载就发 /api/v1/products,
