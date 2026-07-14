@@ -212,14 +212,14 @@ export default function TopBar({
             placeholder={t('searchPlaceholder')}
             aria-label={t('searchAria')}
           />
-          {q && (
+          {(q || categoryId || seriesId) && (
             <button
               type="button"
               className="search-clear-btn"
               onMouseDown={e => e.preventDefault()}
               onClick={() => { onQ(''); onCategoryId(undefined); onSeriesId(undefined); }}
-              aria-label={t('searchClear') || '清除搜索'}
-              title={t('searchClear') || '清除搜索'}
+              aria-label={t('searchClear') || '清除筛选'}
+              title={t('searchClear') || '清除筛选'}
             >
               <X size={16} />
             </button>
