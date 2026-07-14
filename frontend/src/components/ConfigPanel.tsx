@@ -361,9 +361,6 @@ export default function ConfigPanel({
         {providerMessage && <p className="provider-message">{providerMessage}</p>}
       </section>
       )}
-
-      <p>{t('libraryPath')}: <code>{cfg?.library_path}</code></p>
-      <p>{t('databasePath')}: <code>{cfg?.database_path}</code></p>
     </aside>
   );
 }
