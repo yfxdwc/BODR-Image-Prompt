@@ -126,7 +126,7 @@ export default function UserCenterPanel({ t }: Props) {
   };
 
   return (
-    <aside className={`config drawer ${userCenterOpen ? 'open' : ''}`} aria-label="用户中心">
+    <aside data-drawer="user-center" className={`config drawer ${userCenterOpen ? 'open' : ''}`} aria-label="用户中心">
       <div className="drawer-head">
         <h2>用户中心</h2>
         <button className="panel-close" onClick={closeUserCenter} aria-label="关闭">

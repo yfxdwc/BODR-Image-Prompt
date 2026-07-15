@@ -23,7 +23,7 @@ export default function UserMenu({ t }: Props) {
   return (
     <button
       type="button"
-      className="user-menu-trigger"
+      data-drawer-trigger="user-center" className="user-menu-trigger"
       onClick={() => openUserCenter(false)}
       aria-label={`${user.username} · 用户中心`}
       title="用户中心"

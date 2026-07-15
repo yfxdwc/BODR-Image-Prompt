@@ -234,6 +234,7 @@ export default function TopBar({
         {/* ⑤ 设置齿轮 - 独立一格 */}
         <button
           type="button"
+          data-drawer-trigger="config"
           className="iconbtn nav-config-button"
           onClick={openConfig}
           aria-label={t('config') || '设置'}

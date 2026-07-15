@@ -205,7 +205,7 @@ export default function ConfigPanel({
     : 'The update has been installed. The macOS service restart has been scheduled; reconnect after it comes back online.';
 
   return (
-    <aside className={`config drawer ${open ? 'open' : ''}`}>
+    <aside data-drawer="config" className={`config drawer ${open ? 'open' : ''}`}>
       <div className="drawer-head">
         <h2>{t('config')}</h2>
         <button className="panel-close" onClick={onClose} aria-label={t('closeConfig')}><X size={20} strokeWidth={2.25} /></button>
