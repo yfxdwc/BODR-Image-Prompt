@@ -114,9 +114,17 @@ function ProductInfoPanel({
     }
   };
 
+  // 2026-07-16 主人拍: 初始打开编辑时, 若 product 已有 category, 立即按 category_id 过滤 series,
+  // 避免下拉里出现 "浴霸" 品类 + "晾衣机" 系列的错配组合. category 改变时由 handleCategoryChange 重新拉.
   useEffect(() => {
-    if (editing) refreshDictionary();
-  }, [editing]);
+    if (!editing) return;
+    const cat = (product.category
+      ? (categories.length ? categories : null) || (categories as any)
+      : null);
+    // 第一次进入编辑时 categories 还没拉, 走全量; 下个 effect 拿到 product.category 后再过滤一次.
+    refreshDictionary();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing, product.id]);
 
   // 每次 product 变化 (例如 PATCH 后) 同步本地状态
   useEffect(() => {
@@ -128,6 +136,16 @@ function ProductInfoPanel({
     setAfterSales(product.after_sales ?? '');
     setCertifications(product.certifications ?? '');
   }, [product.id, product.category, product.name, product.series, product.spec, product.selling_points, product.after_sales, product.certifications]);
+
+  // 2026-07-16 主人拍: 打开编辑且 product 有 category 时, 按 category_id 拉 series.
+  // categories 拉到位后会再触发一次.
+  useEffect(() => {
+    if (!editing) return;
+    if (!product.category) return;
+    if (categories.length === 0) return;
+    const cat = categories.find(c => c.name === product.category);
+    if (cat) refreshDictionary({ categoryId: cat.id });
+  }, [editing, product.category, categories.length]);
 
   // 2026-07-06: 创建新字典项成功后, 自动选中和关闭
   const handleCreateCategory = async () => {
