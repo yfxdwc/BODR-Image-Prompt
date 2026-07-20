@@ -2,7 +2,7 @@ import type { MouseEvent } from 'react';
 import { Check, Copy, Download, Heart, Pencil, Star } from 'lucide-react';
 import { mediaUrl } from '../api/client';
 import type { ImageRecord, ItemSummary } from '../types';
-import { downloadFileName, imageDisplayPath, imageThumbnailPath, selectPrimaryImage } from '../utils/images';
+import { downloadFileName, downloadImageAsJpeg, imageDisplayPath, imageThumbnailPath, selectPrimaryImage } from '../utils/images';
 import type { Translator } from '../utils/i18n';
 
 const STACK_PREVIEW_COUNT = 4; // 卡片堆叠最多 4 张, 超出显示 +N
@@ -99,7 +99,7 @@ export default function ItemCard({
       )}
       {!isSelecting && <div className="card-actions" aria-label={t('itemActions')}>
         <button className="hover-action" onClick={copyPrompt} aria-label={t('copyPrompt')} title={t('copyPrompt')}><Copy size={15} /></button>
-        {primaryImage && imagePath && <a className="hover-action" href={mediaUrl(primaryImage.original_path || imagePath)} download={downloadFileName(item.title, primaryImage?.original_path || imagePath)} onClick={event => event.stopPropagation()} aria-label="Download" title="Download"><Download size={15} /></a>}
+        {primaryImage && imagePath && <button type="button" className="hover-action" onClick={async event => { event.stopPropagation(); try { await downloadImageAsJpeg(item.title, mediaUrl(primaryImage.original_path || imagePath)); } catch (e) { /* 静默 */ } }} aria-label="Download" title="Download"><Download size={15} /></button>}
         {showActions && onFavorite && <button className="hover-action" onClick={favorite} aria-label={item.favorite ? t('saved') : t('favorite')} title={item.favorite ? t('saved') : t('favorite')}><Heart size={15} fill={item.favorite ? 'currentColor' : 'none'} /></button>}
         {showActions && onEdit && <button className="hover-action" onClick={edit} aria-label={t('edit')} title={t('edit')}><Pencil size={15} /></button>}
       </div>}

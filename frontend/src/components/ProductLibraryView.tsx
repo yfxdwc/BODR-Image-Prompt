@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import type { CategoryRecord, Product, ProductDetail, ProductImageRecord, SeriesRecord } from '../types';
 import type { Translator } from '../utils/i18n';
 import { extractImageFromPasteEvent } from '../utils/clipboard';
+import { downloadImageAsJpeg } from '../utils/images';
 
 const SPEC_PREVIEW_LENGTH = 80;
 const SELLING_POINTS_PREVIEW_LENGTH = 60;
@@ -851,19 +852,9 @@ function ProductModal({
     setDownloading(true);
     setError(null);
     try {
-      const resp = await fetch(src, { credentials: 'include' });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const blob = await resp.blob();
-      const fileName = (img.original_path || '').split('/').pop() || `product-image-${img.id.slice(-6)}.png`;
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      // 延迟 revoke, 让 Safari/部分浏览器有机会起下载
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      // 2026-07-20 主人拍: 不论服务端存啥格式, 用户下载一律转 .jpg
+      const title = product.name || `product-${img.id.slice(-6)}`;
+      await downloadImageAsJpeg(title, src);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {

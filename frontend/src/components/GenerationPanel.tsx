@@ -6,7 +6,7 @@ import qualityIcon from '../assets/generation-controls/quality.png';
 import { api, mediaUrl } from '../api/client';
 import type { ClusterRecord, GenerationJobAcceptAsNewItemPayload, GenerationJobRecord, GenerationProviderStatus, ItemDetail, TagRecord } from '../types';
 import type { Translator } from '../utils/i18n';
-import { downloadFileName } from '../utils/images';
+import { downloadFileName, downloadImageAsJpeg } from '../utils/images';
 import { resolveOriginalPrompt, resolvePromptText, type PromptCopyLanguage } from '../utils/prompts';
 import { extractPromptTemplateVariableRecords, resolvePromptTemplate } from '../utils/promptTemplateVariables';
 
@@ -867,7 +867,7 @@ export default function GenerationPanel({
           </section>
 
           <section ref={stageRef} className="generation-stage-card">
-            {selectedStageJob?.result_path && <a className="modal-icon-button generation-download-overlay" href={jobResultUrl(selectedStageJob)} download={downloadFileName('generation-result', selectedStageJob.result_path)} aria-label="Download" title="Download"><Download size={16} /></a>}
+            {selectedStageJob?.result_path && <button type="button" className="modal-icon-button generation-download-overlay" onClick={async () => { try { await downloadImageAsJpeg('generation-result', jobResultUrl(selectedStageJob!)); } catch (e) { /* 静默 */ } }} aria-label="Download" title="Download"><Download size={16} /></button>}
             <button className="modal-icon-button generation-fullscreen-overlay" onClick={toggleStageFullscreen} aria-label="View fullscreen" title="View fullscreen"><Maximize2 size={16} /></button>
             <button className="modal-icon-button close generation-close-overlay" onClick={handleClose} aria-label={t('close')}><X size={20} strokeWidth={2.25} /></button>
             {renderStage()}

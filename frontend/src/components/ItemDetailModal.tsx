@@ -6,7 +6,7 @@ import { api, mediaUrl } from '../api/client';
 import type { ClusterRecord, ImageRecord, ItemDetail, PromptRecord, TagRecord, UiLanguage } from '../types';
 import { copyTextToClipboard } from '../utils/clipboard';
 import { localizedDemoTitle } from '../utils/demoTitles';
-import { downloadFileName, imageDisplayPath, imageHeroPath, imageOriginalPath, selectPrimaryImage } from '../utils/images';
+import { downloadFileName, downloadImageAsJpeg, imageDisplayPath, imageHeroPath, imageOriginalPath, selectPrimaryImage } from '../utils/images';
 import type { Translator } from '../utils/i18n';
 import { PROMPT_LANGUAGE_LABELS, resolveOriginalPrompt, resolvePromptText, type PromptCopyLanguage, type PromptLanguage } from '../utils/prompts';
 
@@ -527,7 +527,7 @@ export default function ItemDetailModal({
                 <div className="detail-side-actions">
                   <span className="detail-side-primary-actions">
                     {showMutations && canGenerate && <button className="secondary generate-variant-button" onClick={() => setGenerationOpen(true)}>Generate variant</button>}
-                    {selectedImage && <a className="modal-icon-button download-button" href={mediaUrl(selectedImage.original_path || imageHeroPath(selectedImage))} download={downloadFileName(displayTitle || item.title, selectedImage?.original_path || imageHeroPath(selectedImage))} aria-label="Download" title="Download"><Download size={18} /></a>}
+                    {selectedImage && <button type="button" className="modal-icon-button download-button" onClick={async () => { try { await downloadImageAsJpeg(displayTitle || item.title, mediaUrl(selectedImage.original_path || imageHeroPath(selectedImage))); } catch (e) { /* 静默 */ } }} aria-label="Download" title="Download"><Download size={18} /></button>}
                     {showMutations && <button className="modal-icon-button favorite-button" onClick={toggleFavorite} aria-label={item.favorite ? t('saved') : t('favorite')}>
                       <Heart size={18} fill={item.favorite ? 'currentColor' : 'none'} />
                     </button>}
