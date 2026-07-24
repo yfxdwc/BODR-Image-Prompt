@@ -566,3 +566,20 @@ class ImageTrackOut(BaseModel):
     copy_count: int
     download_count: int
     recorded: bool
+
+
+class TeamActivityEntry(BaseModel):
+    """2026-07-24 主人拍: 团队活跃统计 (admin 面板)."""
+    user_id: str
+    username: str
+    display_name: Optional[str] = None
+    email: Optional[str] = None
+    role: str
+    copy_hits: int
+    download_hits: int
+    total_hits: int
+
+
+class TeamActivityPage(BaseModel):
+    items: List[TeamActivityEntry]
+    total: int

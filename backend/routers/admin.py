@@ -20,7 +20,8 @@ from backend.schemas import (
     UserCreateAdmin,
     UserMetaUpdate,
     UserPublic,
-)
+    TeamActivityEntry,
+    TeamActivityPage,)
 
 router = APIRouter()
 
@@ -206,3 +207,28 @@ def list_audit(request: Request, limit: int = Query(200, ge=1, le=1000),
             for r in rows
         ]
     return AuditPage(items=items, total=total)
+
+
+
+@router.get("/admin/team-activity", response_model=TeamActivityPage)
+def team_activity(request: Request, _admin=Depends(require_admin)):
+    """2026-07-24 主人拍: 团队活跃 - 每用户 image_copy / image_download 统计.
+    仅 admin 可见. 用来识别谁复制最多 (= 最常找参考的人)."""
+    with connect(request.app.state.library_path) as conn:
+        rows = conn.execute("""
+            SELECT u.id AS user_id, u.username, u.display_name, u.email, u.role,
+                   SUM(CASE WHEN a.action='image_copy' THEN 1 ELSE 0 END) AS copy_hits,
+                   SUM(CASE WHEN a.action='image_download' THEN 1 ELSE 0 END) AS download_hits
+            FROM users u
+            LEFT JOIN audit_log a ON a.user_id = u.id AND a.action IN ('image_copy', 'image_download')
+            WHERE u.role IN ('admin', 'user')
+            GROUP BY u.id
+            ORDER BY (copy_hits + download_hits) DESC, u.username ASC
+        """).fetchall()
+    items = [TeamActivityEntry(
+        user_id=r["user_id"], username=r["username"],
+        display_name=r["display_name"], email=r["email"], role=r["role"],
+        copy_hits=int(r["copy_hits"] or 0), download_hits=int(r["download_hits"] or 0),
+        total_hits=int(r["copy_hits"] or 0) + int(r["download_hits"] or 0),
+    ) for r in rows]
+    return TeamActivityPage(items=items, total=len(items))

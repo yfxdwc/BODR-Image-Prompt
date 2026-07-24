@@ -1162,6 +1162,15 @@ function ProductModal({
                       <Trash2 size={20} strokeWidth={2} />
                     </button>
                     )}
+                    {/* 2026-07-24 主人拍: 大图上 ⬇ 计数 (复制+下载总数), 仅 admin 可见 */}
+                    {isAdmin && ((selectedImage.copy_count || 0) + (selectedImage.download_count || 0)) > 0 && (
+                      <span
+                        className="product-modal-track-badge"
+                        title={`被复制 ${selectedImage.copy_count || 0} 次, 下载 ${selectedImage.download_count || 0} 次`}
+                      >
+                        ⬇ {(selectedImage.copy_count || 0) + (selectedImage.download_count || 0)}
+                      </span>
+                    )}
                     {/* 2026-07-06 19:12 主人拍: 大图脚下 4 按钮容器 (设封面 / 反推 / 复制 / 下载) */}
                     <div className="product-modal-main-image-foot">
                       {/* 1. 设封面 — 仅非封面图可点; 已是封面者禁用. 2026-07-13 主人拍: 仅 admin 可见 */}
@@ -1304,7 +1313,7 @@ function truncate(text: string | null | undefined, max: number): string {
 
 
 // ── ProductCard: 2026-07-05 20:43 主人拍完全重构 — 只显示产品标题 + 堆叠图.  系列/ID/spec/selling_points 全删. ─
-function ProductCard({ product, onClick, q, t }: { product: ProductDetail; onClick: () => void; q?: string; t: Translator }) {
+function ProductCard({ product, onClick, q, t, isAdmin }: { product: ProductDetail; onClick: () => void; q?: string; t: Translator; isAdmin?: boolean }) {
   const cover = product.cover_image || (product.images || []).find(img => img.is_cover);
   const allImages = (product.images || []);
   // 把封面图放到第一个位置，然后其他图
@@ -1314,6 +1323,8 @@ function ProductCard({ product, onClick, q, t }: { product: ProductDetail; onCli
   const stackImages = sortedImages.slice(0, STACK_PREVIEW_COUNT);
   const overflow = (allImages.length) - STACK_PREVIEW_COUNT;
   const hasImages = stackImages.length > 0;
+  // 2026-07-24 主人拍: 卡片上显示 ⬇ N 总活跃 (copy + download), 仅 admin 看
+  const trackTotal = (product.images || []).reduce((s, img) => s + (img.copy_count || 0) + (img.download_count || 0), 0);
 
   return (
     <article
@@ -1343,6 +1354,10 @@ function ProductCard({ product, onClick, q, t }: { product: ProductDetail; onCli
           </div>
           {/* 2026-07-05 21:15 主人拍: 清除右上角 +N 稔章, 改为右下角总图片数量 */}
           <span className="product-card-count-total">{(product.images?.length) || 0}</span>
+          {/* 2026-07-24 主人拍: 团队活跃计数 (copy+download), 仅 admin 可见 */}
+          {isAdmin && trackTotal > 0 && (
+            <span className="product-card-track-total" title={`被复制/下载 ${trackTotal} 次`}>⬇ {trackTotal}</span>
+          )}
           {/* 2026-07-05 20:59 主人拍: 型号标题在堆叠图内部左上角 */}
           <h3 className="product-card-name product-card-name-overlay">{highlightText(product.name, q)}</h3>
         </div>
@@ -1364,10 +1379,12 @@ function ProductLibraryTimelineView({
   products,
   onOpenProduct,
   t,
+  isAdmin,
 }: {
   products: ProductDetail[];
   onOpenProduct: (p: ProductDetail, imageId: string) => void;
   t: Translator;
+  isAdmin?: boolean;
 }) {
   // 2026-07-11 主人拍: timeline 模式不再受 globalThumbnailBudget 约束, 全部展开. 主人切到时间线想看全量.
   // 展平 + 排序 + 兑底
@@ -1422,6 +1439,12 @@ function ProductLibraryTimelineView({
                       loading="lazy"
                       className="product-timeline-img"
                     />
+                    {/* 2026-07-24 主人拍: 时间线模式 per-image ⬇ N, 仅 admin */}
+                    {isAdmin && ((image.copy_count || 0) + (image.download_count || 0)) > 0 && (
+                      <span className="product-timeline-track-badge" title={`被复制/下载 ${(image.copy_count || 0) + (image.download_count || 0)} 次`}>
+                        ⬇ {(image.copy_count || 0) + (image.download_count || 0)}
+                      </span>
+                    )}
                   </div>
                   <span className="product-timeline-item-name">{product.name}</span>
                 </button>
@@ -1624,6 +1647,7 @@ export default function ProductLibraryView({
               onClick={() => setActiveProduct(product)}
               q={q}
               t={t}
+              isAdmin={isAdmin}
             />
           ))}
         </section>
@@ -1633,6 +1657,7 @@ export default function ProductLibraryView({
           products={products}
           onOpenProduct={(p, imageId) => { setActiveProduct(p); setInitialSelectedImageId(imageId); }}
           t={t}
+          isAdmin={isAdmin}
         />
       )}
       {activeProduct ? (

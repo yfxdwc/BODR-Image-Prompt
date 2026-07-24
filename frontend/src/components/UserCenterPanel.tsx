@@ -11,7 +11,7 @@ function formatTime(iso?: string | null): string {
 //   - 下方 tab 区 (admin 用户看: 审批 / 用户 / Audit; 普通用户空)
 
 import { useEffect, useState } from 'react';
-import { LogOut, ShieldCheck, X, Shield, User, Lock, Unlock } from 'lucide-react';
+import { LogOut, ShieldCheck, X, Shield, User, Lock, Unlock, Copy, Download, TrendingUp } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { useDrawer } from '../auth/DrawerContext';
 import { authApi } from '../auth/api';
@@ -69,10 +69,11 @@ export default function UserCenterPanel({ t }: Props) {
   const { isAdmin } = useAuth();
   const { userCenterOpen, closeUserCenter, openConfig, adminTabActive } = useDrawer();
 
-  const [tab, setTab] = useState<'requests' | 'users' | 'audit'>('requests');
+  const [tab, setTab] = useState<'requests' | 'users' | 'audit' | 'team'>('requests');
   const [requests, setRequests] = useState<PendingRequest[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [audit, setAudit] = useState<any[]>([]);
+  const [team, setTeam] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -89,14 +90,16 @@ export default function UserCenterPanel({ t }: Props) {
 
   const loadAll = async () => {
     try {
-      const [reqs, us, au] = await Promise.all([
+      const [reqs, us, au, ta] = await Promise.all([
         authApi.listRequests(),
         authApi.listUsers(),
         authApi.listAudit({ limit: 50 }),
+        authApi.listTeamActivity().catch(() => ({ items: [], total: 0 })),
       ]);
       setRequests(reqs.items);
       setUsers(us.items);
       setAudit(au.items);
+      setTeam(ta.items || []);
     } catch (e: any) {
       setError(e?.message || 'load failed');
     }
@@ -147,6 +150,9 @@ export default function UserCenterPanel({ t }: Props) {
             </button>
             <button role="tab" className={tab === 'audit' ? 'active' : ''} onClick={() => setTab('audit')}>
               Audit<span className="admin-tab-count">{audit.length}</span>
+            </button>
+            <button role="tab" className={tab === 'team' ? 'active' : ''} onClick={() => setTab('team')}>
+              团队活跃<span className="admin-tab-count">{team.length}</span>
             </button>
           </div>
 
@@ -222,6 +228,39 @@ export default function UserCenterPanel({ t }: Props) {
                     ))}
                   </tbody>
                 </table>
+              }
+            </div>
+          )}
+
+          {tab === 'team' && (
+            <div className="admin-tab-body">
+              <p className="muted admin-tab-hint">每用户的复制/下载总数, 按总数倒序. 用于识别"最常找参考"的成员.</p>
+              {team.length === 0 ? <p className="muted admin-tab-empty">暂无团队活动数据</p> :
+                <div className="team-activity-list">
+                  {team.map((u: any) => (
+                    <div key={u.user_id} className="team-activity-row">
+                      <div className="team-activity-avatar" data-role={u.role}>{u.username.slice(0, 1).toUpperCase()}</div>
+                      <div className="team-activity-main">
+                        <div className="team-activity-name-row">
+                          <span className="team-activity-name">{u.display_name || u.username}</span>
+                          {u.role === 'admin' && <span className="team-activity-role-badge">admin</span>}
+                        </div>
+                        <div className="team-activity-email muted small">{u.email}</div>
+                      </div>
+                      <div className="team-activity-stats">
+                        <span className="team-activity-stat" title="复制次数">
+                          <Copy size={13} /> {u.copy_hits}
+                        </span>
+                        <span className="team-activity-stat" title="下载次数">
+                          <Download size={13} /> {u.download_hits}
+                        </span>
+                        <span className="team-activity-stat team-activity-total" title="总活跃">
+                          <TrendingUp size={13} /> {u.total_hits}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               }
             </div>
           )}

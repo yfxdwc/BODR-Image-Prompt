@@ -114,4 +114,6 @@ export const authApi = {
     const q = qs.toString();
     return request<{ items: any[]; total: number }>(`/admin/audit${q ? `?${q}` : ''}`);
   },
+  // 2026-07-24 主人拍: 团队活跃统计, 识别哪些用户复制最多
+  listTeamActivity: () => request<{ items: any[]; total: number }>('/admin/team-activity'),
 };

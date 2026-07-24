@@ -544,6 +544,7 @@ main{max-width:1680px;margin:0 auto;padding:26px 30px 88px}.app.explore-mode{hei
 .product-timeline-masonry{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;align-items:start}
 .product-timeline-item{display:flex;flex-direction:column;padding:0;overflow:hidden;border-radius:12px;border:1px solid rgba(122,108,145,.18);background:#fff;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;text-align:left;align-self:start}
 .product-timeline-item:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(54,42,76,.14);border-color:rgba(109,93,252,.42)}
+.product-timeline-track-badge{position:absolute;left:6px;bottom:6px;display:inline-flex;align-items:center;gap:2px;padding:2px 6px;border-radius:999px;background:rgba(245,158,11,.92);color:#fff;font-size:10.5px;font-weight:900;z-index:2;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.18)}
 .product-timeline-img-wrap{width:100%;overflow:hidden;background:#f5f1e8}
 .product-timeline-img{display:block;width:100%;height:100%;object-fit:cover}
 .product-timeline-item-name{display:block;padding:6px 10px 8px;font-size:12px;font-weight:600;color:#3d334a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:rgba(255,255,255,.94);flex:0 0 auto}
@@ -575,6 +576,7 @@ main{max-width:1680px;margin:0 auto;padding:26px 30px 88px}.app.explore-mode{hei
 
 /* 2026-07-05 21:15 主人拍: 清除右上角 +N 稔章 (隐藏). 右下角添加总数量标签 (紫色胶囊 + 图片 icon). */
 .product-card-image-count{display:none}
+.product-card-track-total{position:absolute;left:8px;bottom:8px;display:inline-flex;align-items:center;gap:2px;padding:2px 7px;border-radius:999px;background:rgba(245,158,11,.92);color:#fff;font-size:11px;font-weight:900;letter-spacing:.02em;box-shadow:0 4px 10px rgba(0,0,0,.18);z-index:2;pointer-events:none}
 .product-card-count-total{position:absolute;bottom:10px;right:10px;display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:32px;padding:0 12px;border-radius:999px;background:rgba(109,93,252,.16);color:#6d5dfc;font-size:14px;font-weight:900;letter-spacing:.02em;box-shadow:0 6px 18px rgba(109,93,252,.25),0 2px 4px rgba(54,42,76,.08);backdrop-filter:blur(8px);z-index:7;border:1.5px solid rgba(109,93,252,.85)}
 .product-info-field-row{display:flex;gap:12px}
 .product-info-field-row .product-info-field{flex:1}
@@ -680,6 +682,7 @@ textarea.product-info-input{min-height:60px}
 .product-modal-main-image-copy.is-error{background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff}
 .product-modal-main-image-copy-label{line-height:1}
 /* 2026-07-06 19:12 主人拍: 4 个脚下按钮 (封面/反推/复制/下载) 改为弹性容器位于大图右下方 */
+.product-modal-track-badge{position:absolute;left:14px;top:14px;display:inline-flex;align-items:center;gap:3px;padding:4px 10px;border-radius:999px;background:rgba(245,158,11,.95);color:#fff;font-size:12px;font-weight:900;letter-spacing:.02em;z-index:3;box-shadow:0 6px 16px rgba(0,0,0,.22);pointer-events:none}
 .product-modal-main-image-foot{display:inline-flex;align-items:center;gap:10px;position:absolute;bottom:10px;right:10px}
 .product-modal-main-image-foot .product-modal-main-image-copy,
 .product-modal-main-image-foot .product-modal-main-image-ai,
@@ -1127,3 +1130,21 @@ mark.search-highlight{
 .admin-edit-field{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:#211922}
 .admin-edit-field input{padding:7px 10px;border:1px solid rgba(33,25,34,.16);border-radius:8px;background:white;font-size:13px}
 .admin-edit-actions{display:flex;gap:8px}
+
+
+/* 2026-07-24 主人拍: 团队活跃 tab 卡片 */
+.admin-tab-hint{font-size:12px;line-height:1.5;padding:10px 4px 0;color:var(--muted,#8a8376)}
+.team-activity-list{display:flex;flex-direction:column;gap:8px}
+.team-activity-row{display:grid;grid-template-columns:36px 1fr auto;align-items:center;gap:10px;padding:10px 12px;border:1px solid rgba(122,108,115,.18);border-radius:14px;background:linear-gradient(180deg,#fff,#fbf9f6)}
+.team-activity-avatar{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,#6d5dfc,#9b6dff);color:#fff;font-weight:900;font-size:14px}
+.team-activity-avatar[data-role="admin"]{background:linear-gradient(135deg,#f59e0b,#f43f5e)}
+.team-activity-main{min-width:0;display:flex;flex-direction:column;gap:2px}
+.team-activity-name-row{display:flex;align-items:center;gap:6px;min-width:0}
+.team-activity-name{font-size:13.5px;font-weight:900;color:#1f1726;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.team-activity-role-badge{font-size:10px;font-weight:900;padding:1px 6px;border-radius:999px;background:rgba(245,158,11,.14);color:#a85a05;border:1px solid rgba(245,158,11,.30);letter-spacing:.04em}
+.team-activity-email{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.team-activity-stats{display:inline-flex;align-items:center;gap:6px;flex-shrink:0}
+.team-activity-stat{display:inline-flex;align-items:center;gap:3px;padding:3px 7px;border-radius:8px;background:rgba(122,108,145,.10);color:#372b3a;font-size:11.5px;font-weight:800;line-height:1}
+.team-activity-stat svg{opacity:.7}
+.team-activity-total{background:linear-gradient(135deg,#6d5dfc,#9b6dff);color:#fff}
+.team-activity-total svg{opacity:1}
