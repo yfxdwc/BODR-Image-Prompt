@@ -855,6 +855,8 @@ function ProductModal({
       // 2026-07-20 主人拍: 不论服务端存啥格式, 用户下载一律转 .jpg
       const title = product.name || `product-${img.id.slice(-6)}`;
       await downloadImageAsJpeg(title, src);
+      // 2026-07-24 主人拍: 下载计数上报 (fire-and-forget)
+      api.products.trackImage(img.id, 'download');
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -1066,6 +1068,8 @@ function ProductModal({
         throw new Error('Clipboard API not supported');
       }
       await navigator.clipboard.write([new ClipboardItemCtor({ 'image/png': outBlob })]);
+      // 2026-07-24 主人拍: 复制计数上报 (fire-and-forget)
+      api.products.trackImage(img.id, 'copy');
       setCopyState('copied');
       setTimeout(() => setCopyState('idle'), 1800);
     } catch (e) {

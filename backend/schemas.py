@@ -358,6 +358,9 @@ class ProductImageRecord(BaseModel):
     # 2026-07-10 主人拍: 瀑布流时间线用. created_at 优先; created_at 不可靠时 (=全部同月) 兑底用文件系统 mtime.
     # 前端 timeline 视图按这个字段的 YYYY-MM 分组.
     effective_uploaded_at: Optional[str] = None
+    # 2026-07-24 主人拍: 团队偏好热度, 用于识别更受用户喜欢的图片.
+    copy_count: int = 0
+    download_count: int = 0
 
 
 class ProductImageList(BaseModel):
@@ -551,3 +554,15 @@ class AuditEntry(BaseModel):
 class AuditPage(BaseModel):
     items: List[AuditEntry]
     total: int
+
+
+class ImageTrackIn(BaseModel):
+    """2026-07-24 主人拍: 用户复制/下载图片时上报, 后端 +1 计数."""
+    action: str  # "copy" | "download"
+
+
+class ImageTrackOut(BaseModel):
+    image_id: str
+    copy_count: int
+    download_count: int
+    recorded: bool

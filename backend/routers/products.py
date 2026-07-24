@@ -12,7 +12,8 @@ from backend.schemas import (
     ProductCoverUpdate, ProductCreate, ProductDetail, ProductDetailList, ProductImageList,
     ProductImagePromptUpdate, ProductInfoUpdate, ProductReorderRequest,
     CategoryCreate, CategoryList, SeriesCreate, SeriesList,
-)
+    ImageTrackIn,
+    ImageTrackOut,)
 
 router = APIRouter()
 
@@ -351,3 +352,42 @@ def delete_product(request: Request, product_id: int) -> None:
         _get_repo(request).delete_product(product_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=f"Not found: {exc}") from exc
+
+
+
+@router.post("/products/images/{image_id}/track", response_model=ImageTrackOut)
+def track_image_action(request: Request, image_id: str, payload: ImageTrackIn, user = Depends(require_user)):
+    """2026-07-24 主人拍: 用户复制/下载图片时调用, 后端 +1 计数.
+    节流: 同一用户对同一图同一动作 5 秒内只计 1 次 (基于 audit_log 查重)."""
+    from backend.db import connect
+    from backend.auth.deps import _client_ip
+    from datetime import datetime, timezone, timedelta
+    action = payload.action
+    if action not in ("copy", "download"):
+        raise HTTPException(status_code=400, detail="action must be 'copy' or 'download'")
+    threshold = (datetime.now(timezone.utc) - timedelta(seconds=5)).isoformat()
+    with connect(request.app.state.library_path) as conn:
+        dup = conn.execute(
+            "SELECT 1 FROM audit_log WHERE user_id=? AND action=? AND resource_id=? AND created_at >= ? LIMIT 1",
+            (user.id, f"image_{action}", image_id, threshold),
+        ).fetchone()
+        if dup is not None:
+            row = conn.execute("SELECT copy_count, download_count FROM product_images WHERE id=?", (image_id,)).fetchone()
+            if row is None:
+                raise HTTPException(status_code=404, detail="Image not found")
+            return ImageTrackOut(image_id=image_id, copy_count=row["copy_count"], download_count=row["download_count"], recorded=False)
+        try:
+            conn.execute(
+                "INSERT INTO audit_log(user_id, action, resource_type, resource_id, ip, user_agent, created_at) "
+                "VALUES(?,?,?,?,?,?,?)",
+                (user.id, f"image_{action}", "product_image", image_id,
+                 _client_ip(request), request.headers.get("user-agent", "")[:512],
+                 datetime.now(timezone.utc).isoformat()),
+            )
+        except Exception:
+            pass
+    repo = _get_repo(request)
+    result = repo.track_action(image_id, action)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Image not found")
+    return ImageTrackOut(image_id=result["image_id"], copy_count=result["copy_count"], download_count=result["download_count"], recorded=True)

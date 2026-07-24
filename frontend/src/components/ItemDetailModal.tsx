@@ -527,7 +527,7 @@ export default function ItemDetailModal({
                 <div className="detail-side-actions">
                   <span className="detail-side-primary-actions">
                     {showMutations && canGenerate && <button className="secondary generate-variant-button" onClick={() => setGenerationOpen(true)}>Generate variant</button>}
-                    {selectedImage && <button type="button" className="modal-icon-button download-button" onClick={async () => { try { await downloadImageAsJpeg(displayTitle || item.title, mediaUrl(selectedImage.original_path || imageHeroPath(selectedImage))); } catch (e) { /* 静默 */ } }} aria-label="Download" title="Download"><Download size={18} /></button>}
+                    {selectedImage && <button type="button" className="modal-icon-button download-button" onClick={async () => { try { await downloadImageAsJpeg(displayTitle || item.title, mediaUrl(selectedImage.original_path || imageHeroPath(selectedImage))); api.products.trackImage(selectedImage.id, 'download'); } catch (e) { /* 静默 */ } }} aria-label="Download" title="Download"><Download size={18} /></button>}
                     {showMutations && <button className="modal-icon-button favorite-button" onClick={toggleFavorite} aria-label={item.favorite ? t('saved') : t('favorite')}>
                       <Heart size={18} fill={item.favorite ? 'currentColor' : 'none'} />
                     </button>}

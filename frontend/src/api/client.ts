@@ -208,6 +208,7 @@ export const api = isDemoMode ? {
     listCategories: () => Promise.resolve<CategoryList>({ items: [], total: 0 }),
     createCategory: (_body: { name: string }) => Promise.resolve<CategoryList>({ items: [], total: 0 }),
     listSeries: () => Promise.resolve<SeriesList>({ items: [], total: 0 }),
+    trackImage: (_imageId: string, _action: 'copy' | 'download') => undefined,
     createSeries: (_body: { name: string; category_id?: number }) => Promise.resolve<SeriesList>({ items: [], total: 0 }),
   },
   // 2026-07-05 19:30 主人拍 B 方案: 缩略图 ✨ 按钮调 Codex vision 反推 5 字段
@@ -313,6 +314,17 @@ export const api = isDemoMode ? {
       return json<SeriesList>(`/api/v1/series_dict${q}`);
     },
     createSeries: (body: { name: string; category_id?: number }) => json<SeriesList>('/api/v1/series_dict', { method: 'POST', body: JSON.stringify(body) }),
+    // 2026-07-24 主人拍: 复制/下载计数上报 (fire-and-forget, 失败不影响主流程)
+    // 2026-07-24 主人拍: 复制/下载计数上报 (fire-and-forget, 失败不影响主流程)
+    // 返回 Promise<void> 避免 .catch() 链式调用 TS 报错
+    trackImage: (imageId: string, action: 'copy' | 'download'): void => {
+      fetch(`/api/v1/products/images/${imageId}/track`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'Origin': window.location.origin },
+        body: JSON.stringify({ action }),
+      }).catch(() => undefined);
+    },
   },
   polishPrompt: (payload: { text: string; language?: string }) => json<{ text: string; model: string; changed: boolean; duration_ms: number }>('/api/llm/polish-prompt', { method: 'POST', body: JSON.stringify(payload) }),
   // 2026-07-05 19:30 B 方案: 5 字段反推

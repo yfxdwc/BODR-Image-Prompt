@@ -1117,6 +1117,21 @@ class ProductRepository:
                 conn.execute("UPDATE products SET cover_image_id=?, updated_at=? WHERE id=?", (new_cover_id, datetime.now(timezone.utc).isoformat(), product_id))
         return self.get_product(product_id)
 
+    def track_action(self, image_id: str, action: str) -> Optional[Dict[str, Any]]:
+        """2026-07-24 主人拍: 复制/下载计数 +1, 返回最新计数. 不存在返回 None.
+        不做节流 (节流逻辑放 router 层, 用 audit_log 判)."""
+        if action not in ("copy", "download"):
+            raise ValueError("action must be copy or download")
+        col = "copy_count" if action == "copy" else "download_count"
+        with connect(self.library_path) as conn:
+            row = conn.execute("SELECT id FROM product_images WHERE id=?", (image_id,)).fetchone()
+            if row is None:
+                return None
+            conn.execute(f"UPDATE product_images SET {col} = {col} + 1 WHERE id=?", (image_id,))
+            r = conn.execute("SELECT copy_count, download_count FROM product_images WHERE id=?", (image_id,)).fetchone()
+        return {"image_id": image_id, "copy_count": r["copy_count"], "download_count": r["download_count"]}
+
+
     def reorder_images(self, product_id: int, image_ids: list) -> "ProductDetail":
         now = datetime.now(timezone.utc).isoformat()
         with connect(self.library_path) as conn:

@@ -1,4 +1,5 @@
 import type { MouseEvent } from 'react';
+import { api } from '../api/client';
 import { Check, Copy, Download, Heart, Pencil, Star } from 'lucide-react';
 import { mediaUrl } from '../api/client';
 import type { ImageRecord, ItemSummary } from '../types';
@@ -99,7 +100,7 @@ export default function ItemCard({
       )}
       {!isSelecting && <div className="card-actions" aria-label={t('itemActions')}>
         <button className="hover-action" onClick={copyPrompt} aria-label={t('copyPrompt')} title={t('copyPrompt')}><Copy size={15} /></button>
-        {primaryImage && imagePath && <button type="button" className="hover-action" onClick={async event => { event.stopPropagation(); try { await downloadImageAsJpeg(item.title, mediaUrl(primaryImage.original_path || imagePath)); } catch (e) { /* 静默 */ } }} aria-label="Download" title="Download"><Download size={15} /></button>}
+        {primaryImage && imagePath && <button type="button" className="hover-action" onClick={async event => { event.stopPropagation(); try { await downloadImageAsJpeg(item.title, mediaUrl(primaryImage.original_path || imagePath)); api.products.trackImage(primaryImage.id, 'download'); } catch (e) { /* 静默 */ } }} aria-label="Download" title="Download"><Download size={15} /></button>}
         {showActions && onFavorite && <button className="hover-action" onClick={favorite} aria-label={item.favorite ? t('saved') : t('favorite')} title={item.favorite ? t('saved') : t('favorite')}><Heart size={15} fill={item.favorite ? 'currentColor' : 'none'} /></button>}
         {showActions && onEdit && <button className="hover-action" onClick={edit} aria-label={t('edit')} title={t('edit')}><Pencil size={15} /></button>}
       </div>}
